@@ -147,6 +147,7 @@ const { user } = useAuth()
 const mainItems = [
   { label: 'Início',        to: '/',            icon: 'home' },
   { label: 'Meu trabalho',  to: '/mywork',      icon: 'user' },
+  { label: 'Quadros',       to: '/boards',      icon: 'grid' },
   { label: 'Áreas',         to: '/workspaces',  icon: 'folder' },
   { label: 'Membros',       to: '/members',     icon: 'users' },
   { label: 'Configurações', to: '/settings',    icon: 'settings' },
