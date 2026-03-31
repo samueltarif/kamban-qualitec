@@ -20,11 +20,16 @@ export default defineNuxtConfig({
       title: 'Qualitec',
       titleTemplate: '%s · Qualitec',
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-        { rel: 'shortcut icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'shortcut icon', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/favicon.png' },
       ],
       meta: [
-        { name: 'description', content: 'Gestão de tarefas em equipe — Qualitec' }
+        { name: 'description', content: 'Gestão de tarefas em equipe — Qualitec' },
+        { property: 'og:title', content: 'Qualitec · Kanban' },
+        { property: 'og:description', content: 'Gestão de tarefas em equipe — Qualitec' },
+        { property: 'og:image', content: '/favicon.png' },
+        { property: 'og:type', content: 'website' },
       ]
     }
   }
