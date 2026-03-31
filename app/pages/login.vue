@@ -123,15 +123,31 @@
                   Esqueceu a senha?
                 </NuxtLink>
               </div>
-              <input
-                id="password"
-                v-model="form.password"
-                type="password"
-                autocomplete="current-password"
-                placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all bg-white/15 lg:bg-white border border-white/25 lg:border-neutral-200 text-white lg:text-neutral-900 placeholder:text-white/50 lg:placeholder:text-neutral-400 backdrop-blur-sm lg:backdrop-blur-none"
-                :class="{ 'border-red-400': errors.password }"
-              />
+              <div class="relative">
+                <input
+                  id="password"
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  placeholder="••••••••"
+                  class="w-full px-4 py-3 pr-11 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all bg-white/15 lg:bg-white border border-white/25 lg:border-neutral-200 text-white lg:text-neutral-900 placeholder:text-white/50 lg:placeholder:text-neutral-400 backdrop-blur-sm lg:backdrop-blur-none"
+                  :class="{ 'border-red-400': errors.password }"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 lg:text-neutral-400 hover:text-white lg:hover:text-neutral-600 transition-colors"
+                  :aria-label="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                >
+                  <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                  <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
               <p v-if="errors.password" class="text-xs mt-1 text-red-300 lg:text-red-500">{{ errors.password }}</p>
             </div>
 
@@ -201,15 +217,31 @@
 
             <div>
               <label for="reg-password" class="text-sm font-medium text-white/90 lg:text-neutral-700 block mb-1.5">Senha</label>
-              <input
-                id="reg-password"
-                v-model="regForm.password"
-                type="password"
-                autocomplete="new-password"
-                placeholder="Mínimo 6 caracteres"
-                class="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all bg-white/15 lg:bg-white border border-white/25 lg:border-neutral-200 text-white lg:text-neutral-900 placeholder:text-white/50 lg:placeholder:text-neutral-400 backdrop-blur-sm lg:backdrop-blur-none"
-                :class="{ 'border-red-400': regErrors.password }"
-              />
+              <div class="relative">
+                <input
+                  id="reg-password"
+                  v-model="regForm.password"
+                  :type="showRegPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  placeholder="Mínimo 6 caracteres"
+                  class="w-full px-4 py-3 pr-11 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all bg-white/15 lg:bg-white border border-white/25 lg:border-neutral-200 text-white lg:text-neutral-900 placeholder:text-white/50 lg:placeholder:text-neutral-400 backdrop-blur-sm lg:backdrop-blur-none"
+                  :class="{ 'border-red-400': regErrors.password }"
+                />
+                <button
+                  type="button"
+                  @click="showRegPassword = !showRegPassword"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 lg:text-neutral-400 hover:text-white lg:hover:text-neutral-600 transition-colors"
+                  :aria-label="showRegPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                >
+                  <svg v-if="showRegPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                  <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
               <p v-if="regErrors.password" class="text-xs mt-1 text-red-300 lg:text-red-500">{{ regErrors.password }}</p>
             </div>
 
@@ -332,6 +364,8 @@ const registerSuccess = ref(false)
 const videoDesktop = ref<HTMLVideoElement | null>(null)
 const videoMobile  = ref<HTMLVideoElement | null>(null)
 const isMuted = ref(true)
+const showPassword    = ref(false)
+const showRegPassword = ref(false)
 
 function toggleMute() {
   isMuted.value = !isMuted.value
