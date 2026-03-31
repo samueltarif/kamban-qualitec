@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@vercel/analytics/nuxt'],
   css: ['~/assets/css/main.css'],
   alias: {
     '#shared': fileURLToPath(new URL('./shared', import.meta.url))
