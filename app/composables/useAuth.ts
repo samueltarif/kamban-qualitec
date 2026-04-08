@@ -5,6 +5,8 @@ import type { Database } from '#shared/types/database'
 
 type SupabaseClient = ReturnType<typeof createClient<Database>>
 
+// Fixed: Using native Supabase Auth methods instead of edge functions
+
 export function useAuth() {
   const user      = useState<AuthUser | null>('auth:user',    () => null)
   const isLoading = useState<boolean>('auth:loading', () => false)
@@ -89,7 +91,13 @@ export function useAuth() {
         password,
       })
 
-      if (error) throw new Error(error.message)
+      if (error) {
+        // Mensagem mais clara para email não confirmado
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error('Email não confirmado. Verifique sua caixa de entrada.')
+        }
+        throw new Error(error.message)
+      }
       if (!data.user) throw new Error('Credenciais inválidas')
 
       // Load profile after successful login
