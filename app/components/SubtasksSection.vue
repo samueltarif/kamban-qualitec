@@ -19,16 +19,17 @@
     </div>
 
     <!-- Input para criar nova subtarefa -->
-    <div v-if="canEdit" class="flex items-center gap-2">
+    <div class="flex items-center gap-2">
       <input
         v-model="newSubtaskTitle"
         type="text"
         placeholder="Adicionar subitem..."
-        class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-400 min-h-[44px]"
+        :disabled="!canEdit"
+        class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-400 min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-neutral-50"
         @keydown.enter.prevent="handleCreate"
       />
       <button
-        v-if="newSubtaskTitle.trim()"
+        v-if="newSubtaskTitle.trim() && canEdit"
         type="button"
         class="px-4 py-2.5 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 transition-colors min-h-[44px]"
         :disabled="creating"
@@ -69,7 +70,7 @@ const props = defineProps<{
   boardId: string
 }>()
 
-const { canEdit } = useBoardPermissions(props.boardId)
+const { canEdit, fetchUserRole } = useBoardPermissions(props.boardId)
 const {
   subtasks,
   loading,
@@ -82,6 +83,11 @@ const {
 } = useSubtasks(props.taskId)
 
 const newSubtaskTitle = ref('')
+
+// Debug: verificar permissões
+watch(canEdit, (value) => {
+  console.log('🔐 Permissão de edição (canEdit):', value)
+}, { immediate: true })
 
 const sortedSubtasks = computed(() => 
   [...subtasks.value].sort((a, b) => a.sort_order - b.sort_order)
@@ -117,8 +123,11 @@ async function handleDelete(subtaskId: string) {
   await deleteSubtask(subtaskId)
 }
 
-// Carregar subtarefas ao montar
-onMounted(() => {
-  fetchSubtasks()
+// Carregar subtarefas e permissões ao montar
+onMounted(async () => {
+  await Promise.all([
+    fetchSubtasks(),
+    fetchUserRole()
+  ])
 })
 </script>
