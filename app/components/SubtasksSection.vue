@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useSortable } from '@vueuse/core'
+import { useSortable } from '@vueuse/integrations/useSortable'
 import { useSubtasks } from '~/composables/useSubtasks'
 import { useBoardPermissions } from '~/composables/useBoardPermissions'
 import SubtaskItem from '~/components/SubtaskItem.vue'
