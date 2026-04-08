@@ -10,6 +10,7 @@ export type ColumnKey =
   | 'priority'
   | 'status'
   | 'assignee'
+  | 'labels'
 
 export interface ColumnDef {
   key: ColumnKey
@@ -21,6 +22,7 @@ export const ALL_COLUMNS: ColumnDef[] = [
   { key: 'assignee',    label: 'Responsável',       defaultVisible: true },
   { key: 'status',      label: 'Status',             defaultVisible: true },
   { key: 'priority',    label: 'Prioridade',         defaultVisible: true },
+  { key: 'labels',      label: 'Etiquetas',          defaultVisible: true },
   { key: 'dueDate',     label: 'Prazo',              defaultVisible: true },
   { key: 'timeline',    label: 'Cronograma',         defaultVisible: true },
   { key: 'notes',       label: 'Notas',              defaultVisible: true },

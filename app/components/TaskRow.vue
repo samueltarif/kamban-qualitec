@@ -75,6 +75,11 @@
             :task-id="task.id"
             :board-id="task.board_id"
           />
+          <LabelsCell
+            v-else-if="col.key === 'labels'"
+            :task-id="task.id"
+            :board-id="task.board_id"
+          />
         </template>
       </template>
     </div>
