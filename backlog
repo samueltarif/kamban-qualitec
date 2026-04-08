@@ -845,8 +845,8 @@ Dependências: 2.1.7.
 Critério de aceite: Valor salvo e formatado corretamente.
 
 Prioridade: Baixa.
-✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅  
-Tarefa 4.1.14 — Criar coluna Última atualização
+
+Tarefa 4.1.14 — Criar coluna Última atualização ✅ 
 
 Descrição curta: Mostrar quando a tarefa foi alterada.
 
@@ -858,7 +858,9 @@ Critério de aceite: Coluna exibe tempo relativo e data completa no hover.
 
 Prioridade: Média.
 
-Tarefa 4.1.15 — Criar coluna Cronograma
+
+
+Tarefa 4.1.15 — Criar coluna Cronograma ✅
 
 Descrição curta: Exibir intervalo de datas.
 
@@ -870,7 +872,9 @@ Critério de aceite: Intervalo salvo com início e fim.
 
 Prioridade: Alta.
 
-Tarefa 4.1.16 — Permitir ocultar colunas
+  
+
+Tarefa 4.1.16 — Permitir ocultar colunas ✅
 
 Descrição curta: Esconder colunas no board.
 
@@ -882,7 +886,10 @@ Critério de aceite: Usuário marca e desmarca colunas visíveis.
 
 Prioridade: Média.
 
-Tarefa 4.1.17 — Permitir reordenar colunas
+
+
+
+Tarefa 4.1.17 — Permitir reordenar colunas ✅
 
 Descrição curta: Alterar ordem horizontal das colunas.
 
@@ -894,7 +901,9 @@ Critério de aceite: Ordem persistida por board/view.
 
 Prioridade: Média.
 
-Fase 5 — Tarefas e subtarefas
+
+
+Fase 5 — Tarefas e subtarefas ✅
 Épico 5.1 — CRUD de tarefas
 Tarefa 5.1.1 — Criar botão “Criar tarefa”
 
@@ -908,7 +917,7 @@ Critério de aceite: Botão abre criação rápida.
 
 Prioridade: Alta.
 
-Tarefa 5.1.2 — Criar input de nova tarefa inline
+Tarefa 5.1.2 — Criar input de nova tarefa inline  ✅
 
 Descrição curta: Adicionar tarefa sem sair da lista.
 
@@ -920,7 +929,9 @@ Critério de aceite: Enter salva tarefa no grupo correto.
 
 Prioridade: Alta.
 
-Tarefa 5.1.3 — Criar modal completo de tarefa
+
+
+Tarefa 5.1.3 — Criar modal completo de tarefa ✅
 
 Descrição curta: Abrir edição detalhada.
 
@@ -932,7 +943,11 @@ Critério de aceite: Modal exibe todos os campos principais.
 
 Prioridade: Alta.
 
-Tarefa 5.1.4 — Editar título da tarefa inline
+
+
+
+ 
+Tarefa 5.1.4 — Editar título da tarefa inline ✅
 
 Descrição curta: Permitir edição rápida no board.
 
@@ -944,7 +959,11 @@ Critério de aceite: Clique edita e salva sem recarregar.
 
 Prioridade: Alta.
 
-Tarefa 5.1.5 — Excluir tarefa com confirmação
+
+
+
+
+Tarefa 5.1.5 — Excluir tarefa com confirmação ✅
 
 Descrição curta: Remover item com segurança.
 
@@ -956,7 +975,7 @@ Critério de aceite: Confirmação obrigatória antes da exclusão.
 
 Prioridade: Alta.
 
-Tarefa 5.1.6 — Arquivar tarefa
+Tarefa 5.1.6 — Arquivar tarefa ✅
 
 Descrição curta: Retirar da lista sem apagar permanentemente.
 
@@ -968,7 +987,9 @@ Critério de aceite: Tarefa some do board e pode ser recuperada.
 
 Prioridade: Média.
 
-Épico 5.2 — Campos de tarefa
+
+
+Épico 5.2 — Campos de tarefa ✅
 Tarefa 5.2.1 — Editar status da tarefa
 
 Descrição curta: Alterar estágio pelo board.
@@ -981,7 +1002,9 @@ Critério de aceite: Dropdown salva status corretamente.
 
 Prioridade: Alta.
 
-Tarefa 5.2.2 — Editar prioridade da tarefa
+
+
+Tarefa 5.2.2 — Editar prioridade da tarefa ✅
 
 Descrição curta: Alterar urgência pelo board.
 
@@ -993,7 +1016,7 @@ Critério de aceite: Prioridade persistida imediatamente.
 
 Prioridade: Alta.
 
-Tarefa 5.2.3 — Editar prazo da tarefa
+Tarefa 5.2.3 — Editar prazo da tarefa ✅
 
 Descrição curta: Selecionar data limite.
 
@@ -1005,7 +1028,7 @@ Critério de aceite: Data salva e refletida em views.
 
 Prioridade: Alta.
 
-Tarefa 5.2.4 — Editar cronograma da tarefa
+Tarefa 5.2.4 — Editar cronograma da tarefa ✅
 
 Descrição curta: Selecionar início e fim.
 
@@ -1017,7 +1040,9 @@ Critério de aceite: Datas válidas e consistentes.
 
 Prioridade: Alta.
 
-Tarefa 5.2.5 — Atribuir responsável
+
+
+Tarefa 5.2.5 — Atribuir responsável ✅
 
 Descrição curta: Selecionar um usuário para a tarefa.
 
@@ -1029,7 +1054,9 @@ Critério de aceite: Avatar aparece após seleção.
 
 Prioridade: Alta.
 
-Tarefa 5.2.6 — Atribuir múltiplos responsáveis
+
+
+Tarefa 5.2.6 — Atribuir múltiplos responsáveis ✅
 
 Descrição curta: Permitir mais de um usuário.
 
@@ -1041,7 +1068,9 @@ Critério de aceite: Múltiplos avatares exibidos sem quebrar layout.
 
 Prioridade: Média.
 
-Tarefa 5.2.7 — Editar nota resumida
+
+
+Tarefa 5.2.7 — Editar nota resumida ✅
 
 Descrição curta: Registrar observação curta diretamente no board.
 
@@ -1053,7 +1082,7 @@ Critério de aceite: Campo salva texto curto com limite definido.
 
 Prioridade: Média.
 
-Tarefa 5.2.8 — Enviar arquivo para tarefa
+Tarefa 5.2.8 — Enviar arquivo para tarefa ✅
 
 Descrição curta: Subir anexo vinculado.
 
@@ -1065,7 +1094,7 @@ Critério de aceite: Upload concluído e arquivo listado.
 
 Prioridade: Alta.
 
-Tarefa 5.2.9 — Remover arquivo da tarefa
+Tarefa 5.2.9 — Remover arquivo da tarefa ✅
 
 Descrição curta: Excluir anexo com confirmação.
 
@@ -1076,8 +1105,8 @@ Dependências: 5.2.8.
 Critério de aceite: Arquivo removido do storage e da interface.
 
 Prioridade: Média.
-
-Tarefa 5.2.10 — Criar subtarefa
+✅
+Tarefa 5.2.10 ✅ — Criar subtarefa
 
 Descrição curta: Adicionar item dependente dentro da tarefa.
 

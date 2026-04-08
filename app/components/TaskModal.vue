@@ -114,6 +114,11 @@
         />
       </div>
 
+      <!-- Subtarefas -->
+      <div class="pt-4 border-t border-neutral-200">
+        <SubtasksSection :task-id="taskId" :board-id="boardId" />
+      </div>
+
       <!-- Anexos -->
       <div class="pt-4 border-t border-neutral-200">
         <TaskAttachmentsManager :task-id="taskId" :board-id="boardId" />
@@ -183,6 +188,7 @@ import { useTaskStatuses } from '~/composables/useTaskStatuses'
 import { useTaskPriorities } from '~/composables/useTaskPriorities'
 import { useTaskAssignees } from '~/composables/useTaskAssignees'
 import { useBoardPermissions } from '~/composables/useBoardPermissions'
+import SubtasksSection from '~/components/SubtasksSection.vue'
 
 const props = defineProps<{
   taskId: string
