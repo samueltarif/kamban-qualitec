@@ -1105,7 +1105,7 @@ Dependências: 5.2.8.
 Critério de aceite: Arquivo removido do storage e da interface.
 
 Prioridade: Média.
-✅
+
 Tarefa 5.2.10 ✅ — Criar subtarefa
 
 Descrição curta: Adicionar item dependente dentro da tarefa.
@@ -1117,8 +1117,8 @@ Dependências: 2.1.11, 5.1.3.
 Critério de aceite: Subtarefa criada no modal.
 
 Prioridade: Alta.
-
-Tarefa 5.2.11 — Marcar subtarefa como concluída
+✅
+Tarefa 5.2.11 ✅ — Marcar subtarefa como concluída 
 
 Descrição curta: Atualizar progresso interno.
 
