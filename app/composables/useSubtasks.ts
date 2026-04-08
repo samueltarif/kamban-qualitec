@@ -62,6 +62,24 @@ export function useSubtasks(taskId: string) {
       
       // Atualização otimista
       subtasks.value.push(data)
+      
+      // Registrar atividade de criação
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase
+            .from('activity_logs')
+            .insert({
+              actor_id: user.id,
+              entity_type: 'subtask',
+              entity_id: data.id,
+              action: 'created',
+              meta_json: { title: title.trim() }
+            })
+        }
+      } catch (logError) {
+        console.error('Erro ao registrar log de criação:', logError)
+      }
     } catch (err: any) {
       console.error('Erro ao criar subtarefa:', err)
       error.value = err.message

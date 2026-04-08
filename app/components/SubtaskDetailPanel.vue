@@ -97,6 +97,11 @@
         <p>Atualizada em: {{ formatDate(subtask.updated_at) }}</p>
       </div>
 
+      <!-- Log de atividade -->
+      <div class="pt-4 border-t border-neutral-200">
+        <SubtaskActivityHistory :subtask-id="props.subtaskId" />
+      </div>
+
       <!-- Botão deletar -->
       <div class="pt-4 border-t border-neutral-200">
         <button
@@ -120,6 +125,8 @@ import { ref, watch } from 'vue'
 import { useSubtasks } from '~/composables/useSubtasks'
 import { useTaskStatuses } from '~/composables/useTaskStatuses'
 import { useTaskPriorities } from '~/composables/useTaskPriorities'
+import { useSubtaskActivity } from '~/composables/useSubtaskActivity'
+import SubtaskActivityHistory from '~/components/SubtaskActivityHistory.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -136,6 +143,7 @@ const emit = defineEmits<{
 const { subtasks, loading, updateSubtask, deleteSubtask, fetchSubtasks, toggleSubtask } = useSubtasks(props.taskId)
 const { statuses, fetchStatuses } = useTaskStatuses(props.boardId)
 const { priorities, fetchPriorities } = useTaskPriorities(props.boardId)
+const { logActivity } = useSubtaskActivity(props.subtaskId)
 
 const subtask = ref<any>(null)
 const localTitle = ref('')
@@ -168,12 +176,18 @@ watch(() => [props.subtaskId, props.modelValue] as const, async ([id, isOpen]) =
 
 async function saveTitle() {
   if (localTitle.value.trim() && localTitle.value !== subtask.value?.title) {
+    const oldValue = subtask.value?.title
     // Atualização otimista instantânea
     if (subtask.value) {
       subtask.value.title = localTitle.value.trim()
     }
     // Salvar no servidor em background (sem await)
     updateSubtask(props.subtaskId, { title: localTitle.value.trim() })
+    // Registrar atividade
+    logActivity('updated_title', {
+      old_value: oldValue,
+      new_value: localTitle.value.trim()
+    })
   }
 }
 
@@ -185,34 +199,60 @@ async function saveNotes() {
     }
     // Salvar no servidor em background (sem await)
     updateSubtask(props.subtaskId, { notes: localNotes.value })
+    // Registrar atividade
+    logActivity('updated_notes')
   }
 }
 
 function saveStatus() {
+  const oldValue = subtask.value?.status_id
+  const statusName = statuses.value.find(s => s.id === localStatusId.value)?.name
+  const oldStatusName = statuses.value.find(s => s.id === oldValue)?.name
+  
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.status_id = localStatusId.value
   }
   // Salvar no servidor em background (sem await)
   updateSubtask(props.subtaskId, { status_id: localStatusId.value })
+  // Registrar atividade
+  logActivity('updated_status', {
+    old_value: oldStatusName || 'Sem status',
+    new_value: statusName || 'Sem status'
+  })
 }
 
 function savePriority() {
+  const oldValue = subtask.value?.priority_id
+  const priorityName = priorities.value.find(p => p.id === localPriorityId.value)?.name
+  const oldPriorityName = priorities.value.find(p => p.id === oldValue)?.name
+  
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.priority_id = localPriorityId.value
   }
   // Salvar no servidor em background (sem await)
   updateSubtask(props.subtaskId, { priority_id: localPriorityId.value })
+  // Registrar atividade
+  logActivity('updated_priority', {
+    old_value: oldPriorityName || 'Sem prioridade',
+    new_value: priorityName || 'Sem prioridade'
+  })
 }
 
 function saveDueDate() {
+  const oldValue = subtask.value?.due_date
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.due_date = localDueDate.value || null
   }
   // Salvar no servidor em background (sem await)
   updateSubtask(props.subtaskId, { due_date: localDueDate.value || null })
+  // Registrar atividade
+  logActivity('updated_due_date', {
+    old_value: oldValue || 'Sem data',
+    new_value: localDueDate.value || 'Sem data'
+  })
 }
 
 function toggleDone() {
@@ -221,6 +261,8 @@ function toggleDone() {
     subtask.value.is_done = localIsDone.value
     // Salvar no servidor em background (sem await)
     toggleSubtask(props.subtaskId, localIsDone.value)
+    // Registrar atividade
+    logActivity(localIsDone.value ? 'marked_done' : 'marked_undone')
   }
 }
 

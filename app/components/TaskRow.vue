@@ -1,12 +1,108 @@
 <template>
   <div>
     <!-- Linha principal da tarefa -->
-    <div class="border-b border-neutral-100 hover:bg-neutral-50 relative overflow-hidden">
-      <!-- Indicador de scroll (gradiente) - apenas mobile -->
-      <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10 lg:hidden" />
-      
-      <!-- Scroll horizontal em mobile para acessar todas as colunas -->
-      <div class="flex items-center gap-2 px-4 py-3 min-h-[44px] overflow-x-auto overflow-y-visible scrollbar-mobile snap-x snap-mandatory touch-pan-x">
+    <div class="border-b border-neutral-100 hover:bg-neutral-50 relative">
+      <!-- Layout mobile: área fixa + área rolável -->
+      <div class="flex lg:hidden">
+        <!-- Área fixa à esquerda (seta + drag handle) -->
+        <div class="flex-shrink-0 flex items-center gap-1 pl-4 pr-2 py-3 bg-white z-20 border-r border-neutral-100">
+          <!-- Botão expand/collapse subtarefas - SEMPRE VISÍVEL -->
+          <button
+            v-if="hasSubtasks"
+            type="button"
+            class="flex-shrink-0 p-1.5 text-neutral-400 hover:text-neutral-700 active:bg-neutral-100 rounded transition-all touch-manipulation"
+            :class="{ 'rotate-90': isExpanded }"
+            @click.stop="toggleExpand"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div v-else class="flex-shrink-0 w-8" />
+        </div>
+
+        <!-- Área rolável horizontalmente -->
+        <div class="flex-1 overflow-x-auto overflow-y-visible scrollbar-mobile snap-x snap-mandatory touch-pan-x">
+          <div class="flex items-center gap-2 pr-4 py-3 min-h-[44px]">
+            <!-- Título editável inline -->
+            <div class="flex-shrink-0 snap-start">
+              <TitleCell
+                :task-id="task.id"
+                :board-id="task.board_id"
+                :title="currentTitle"
+                @update:title="currentTitle = $event"
+                @open-modal="showModal = true"
+              />
+            </div>
+
+            <!-- Todas as colunas na ordem configurada -->
+            <template v-for="col in orderedColumns" :key="col.key">
+              <template v-if="isVisible(col.key)">
+                <div class="flex-shrink-0 snap-start">
+                  <TimelineCell
+                    v-if="col.key === 'timeline'"
+                    :task-id="task.id"
+                    :start-date="currentStartDate"
+                    :end-date="currentEndDate"
+                    @update:start-date="currentStartDate = $event"
+                    @update:end-date="currentEndDate = $event"
+                  />
+                  <BudgetCell
+                    v-else-if="col.key === 'budget'"
+                    :task-id="task.id"
+                    :budget="currentBudget"
+                    @update:budget="currentBudget = $event"
+                  />
+                  <AttachmentsCell
+                    v-else-if="col.key === 'attachments'"
+                    :task-id="task.id"
+                  />
+                  <NotesCell
+                    v-else-if="col.key === 'notes'"
+                    :task-id="task.id"
+                    :board-id="task.board_id"
+                    :note="currentNote"
+                    @update:note="currentNote = $event"
+                  />
+                  <DueDateCell
+                    v-else-if="col.key === 'dueDate'"
+                    :due-date="currentEndDate"
+                  />
+                  <LastUpdatedCell
+                    v-else-if="col.key === 'lastUpdated'"
+                    :updated-at="task.updated_at"
+                  />
+                  <PriorityCell
+                    v-else-if="col.key === 'priority'"
+                    :task-id="task.id"
+                    :board-id="task.board_id"
+                    :priority-id="currentPriorityId"
+                    @update:priority-id="currentPriorityId = $event"
+                  />
+                  <StatusCell
+                    v-else-if="col.key === 'status'"
+                    :task-id="task.id"
+                    :board-id="task.board_id"
+                    :status-id="currentStatusId"
+                    @update:status-id="currentStatusId = $event"
+                  />
+                  <AssigneeCell
+                    v-else-if="col.key === 'assignee'"
+                    :task-id="task.id"
+                    :board-id="task.board_id"
+                  />
+                </div>
+              </template>
+            </template>
+          </div>
+        </div>
+
+        <!-- Indicador de scroll (gradiente) -->
+        <div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+      </div>
+
+      <!-- Layout desktop: tudo em uma linha -->
+      <div class="hidden lg:flex items-center gap-2 px-4 py-3 min-h-[44px]">
         <!-- Botão expand/collapse subtarefas -->
         <button
           v-if="hasSubtasks"
@@ -25,7 +121,7 @@
         <div
           v-if="canEdit"
           :draggable="true"
-          class="hidden lg:flex flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-muted"
+          class="flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-muted"
           title="Arrastar para reordenar"
           @dragstart="$emit('dragStart')"
           @dragend="$emit('dragEnd')"
@@ -35,8 +131,8 @@
           </svg>
         </div>
         
-        <!-- Título editável inline (sticky em mobile) -->
-        <div class="flex-shrink-0 snap-start">
+        <!-- Título editável inline -->
+        <div class="flex-shrink-0">
           <TitleCell
             :task-id="task.id"
             :board-id="task.board_id"
@@ -46,19 +142,10 @@
           />
         </div>
 
-        <!-- Modal completo da tarefa -->
-        <TaskModal
-          v-model="showModal"
-          :task-id="task.id"
-          :board-id="task.board_id"
-          @updated="onTaskUpdated"
-          @deleted="onTaskDeleted"
-        />
-
         <!-- Todas as colunas na ordem configurada -->
         <template v-for="col in orderedColumns" :key="col.key">
           <template v-if="isVisible(col.key)">
-            <div class="flex-shrink-0 snap-start">
+            <div class="flex-shrink-0">
               <TimelineCell
                 v-if="col.key === 'timeline'"
                 :task-id="task.id"
@@ -115,6 +202,15 @@
           </template>
         </template>
       </div>
+
+      <!-- Modal completo da tarefa -->
+      <TaskModal
+        v-model="showModal"
+        :task-id="task.id"
+        :board-id="task.board_id"
+        @updated="onTaskUpdated"
+        @deleted="onTaskDeleted"
+      />
     </div>
 
     <!-- Tabela de subtarefas (aninhada) -->
@@ -252,5 +348,16 @@ onMounted(async () => {
 /* Touch action para permitir scroll horizontal suave */
 .touch-pan-x {
   touch-action: pan-x pan-y;
+}
+
+/* Melhorar resposta ao toque em botões */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
