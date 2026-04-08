@@ -1,12 +1,32 @@
 <template>
   <aside
     :class="[
-      'flex flex-col bg-primary shrink-0 transition-all duration-[300ms] overflow-hidden z-50',
+      'flex flex-col bg-primary shrink-0 transition-all duration-[300ms] overflow-hidden z-50 relative',
       isMobile
         ? ['fixed inset-y-0 left-0', isOpen ? 'w-64' : 'w-0']
         : [isOpen ? 'w-64' : 'w-16']
     ]"
   >
+    <!-- Botão de collapse (desktop only) -->
+    <button
+      v-if="!isMobile"
+      type="button"
+      class="absolute -right-3 top-16 z-50 w-6 h-6 bg-white border border-neutral-200 rounded-full shadow-md flex items-center justify-center text-neutral-600 hover:text-primary-600 hover:border-primary-400 transition-all group"
+      :title="isOpen ? 'Fechar navegação (Ctrl + .)' : 'Abrir navegação (Ctrl + .)'"
+      @click="$emit('toggle')"
+    >
+      <svg 
+        class="w-3.5 h-3.5 transition-transform duration-300"
+        :class="{ 'rotate-180': !isOpen }"
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2.5" 
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+
     <!-- Logo -->
     <div class="flex items-center gap-3 px-4 h-14 border-b border-primary-600 shrink-0">
       <img src="/images/logo_qualitec.png" alt="Qualitec" class="h-8 object-contain shrink-0" />
@@ -132,6 +152,7 @@ defineEmits<{
   'add-workspace': []
   'user-menu': []
   'navigate': []
+  'toggle': []
 }>()
 
 const { user } = useAuth()

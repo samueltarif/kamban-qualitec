@@ -78,15 +78,29 @@ export function useSubtasks(taskId: string) {
     const oldValue = subtasks.value[index].is_done
     subtasks.value[index].is_done = isDone
     
+    console.log('[toggleSubtask] Toggling subtask:', { subtaskId, isDone })
+    
     try {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('subtasks')
         .update({ is_done: isDone })
         .eq('id', subtaskId)
+        .select()
+        .single()
       
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('[toggleSubtask] Database error:', updateError)
+        throw updateError
+      }
+      
+      console.log('[toggleSubtask] Database response:', data)
+      
+      // Atualizar com dados do servidor
+      if (data) {
+        subtasks.value[index] = data
+      }
     } catch (err: any) {
-      console.error('Erro ao atualizar subtarefa:', err)
+      console.error('[toggleSubtask] Error toggling subtask:', err)
       // Reverter otimismo
       subtasks.value[index].is_done = oldValue
       error.value = err.message
@@ -95,22 +109,43 @@ export function useSubtasks(taskId: string) {
 
   async function updateSubtask(subtaskId: string, updates: Partial<Subtask>) {
     const index = subtasks.value.findIndex(s => s.id === subtaskId)
-    if (index === -1) return
+    if (index === -1) {
+      console.error('[updateSubtask] Subtask not found:', subtaskId)
+      return
+    }
     
     const oldValue = { ...subtasks.value[index] }
+    
+    console.log('[updateSubtask] Updating subtask:', {
+      subtaskId,
+      updates,
+      currentValue: subtasks.value[index]
+    })
     
     // Atualização otimista
     Object.assign(subtasks.value[index], updates)
     
     try {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('subtasks')
         .update(updates)
         .eq('id', subtaskId)
+        .select()
+        .single()
       
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('[updateSubtask] Database error:', updateError)
+        throw updateError
+      }
+      
+      console.log('[updateSubtask] Database response:', data)
+      
+      // Atualizar com dados do servidor
+      if (data) {
+        subtasks.value[index] = data
+      }
     } catch (err: any) {
-      console.error('Erro ao atualizar subtarefa:', err)
+      console.error('[updateSubtask] Error updating subtask:', err)
       // Reverter otimismo
       subtasks.value[index] = oldValue
       error.value = err.message

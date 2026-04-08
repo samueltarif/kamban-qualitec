@@ -62,19 +62,13 @@
         v-for="group in visibleGroups"
         :key="group.id"
         :data-group-id="group.id"
-        :draggable="canEdit"
         class="bg-white border border-neutral-200 rounded-xl transition-all"
         :class="{
           'opacity-40 scale-[0.98]': draggingId === group.id,
-          'border-primary-400 border-2': dragOverId === group.id && draggingId !== group.id
+          'border-primary-400 border-2': dragOverGroupId === group.id && draggingTaskId
         }"
-        @dragstart="onDragStart(group.id)"
-        @dragover="onDragOver($event, group.id)"
-        @drop="onDrop(group.id)"
-        @dragend="onDragEnd"
-        @touchstart.passive="onTouchStart($event, group.id)"
-        @touchmove.prevent="onTouchMove"
-        @touchend="onTouchEnd"
+        @dragover.prevent="onGroupDragOver($event, group.id)"
+        @drop="onGroupDrop(group.id)"
       >
         <!-- Cabeçalho do grupo -->
         <div
@@ -84,8 +78,11 @@
           <!-- Handle de drag (visível no hover) -->
           <div
             v-if="canEdit"
+            :draggable="true"
             class="opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-muted shrink-0"
             title="Arrastar para reordenar"
+            @dragstart="onDragStart(group.id)"
+            @dragend="onDragEnd"
           >
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm8-16a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
@@ -174,17 +171,43 @@
         </div>
 
         <!-- Conteúdo do grupo (tarefas) -->
-        <div v-if="!group.is_collapsed">
-          <TaskRow
+        <div 
+          v-if="!group.is_collapsed"
+          @dragover.prevent="onGroupDragOver($event, group.id)"
+          @drop="onGroupDrop(group.id)"
+        >
+          <div
             v-for="task in tasksByGroup[group.id]"
             :key="task.id"
-            :task="task"
-            @task-deleted="handleTaskDeleted"
-          />
-          <p
+            :data-task-id="task.id"
+            class="relative"
+            :class="{
+              'opacity-40': draggingTaskId === task.id,
+              'border-t-2 border-primary-400': dragOverTaskId === task.id && draggingTaskId !== task.id
+            }"
+            @dragover.prevent="onTaskDragOver($event, task.id)"
+            @drop="onTaskDrop(task.id, group.id)"
+          >
+            <TaskRow
+              :task="task"
+              :can-edit="canEdit"
+              @task-deleted="handleTaskDeleted"
+              @drag-start="onTaskDragStart(task.id)"
+              @drag-end="onTaskDragEnd"
+            />
+          </div>
+          <div
             v-if="!(tasksByGroup[group.id]?.length)"
-            class="text-label-sm text-muted italic px-4 py-4"
-          >Nenhuma tarefa ainda.</p>
+            class="px-4 py-8 text-center transition-colors"
+            :class="{
+              'bg-primary-50 border-2 border-dashed border-primary-300': dragOverGroupId === group.id && draggingTaskId
+            }"
+          >
+            <p class="text-label-sm text-muted italic">Nenhuma tarefa ainda.</p>
+            <p v-if="dragOverGroupId === group.id && draggingTaskId" class="text-label-xs text-primary-600 mt-1">
+              Solte aqui para mover
+            </p>
+          </div>
 
           <!-- Botão Nova tarefa / Input inline de criação rápida (padrão Monday.com) -->
           <div v-if="canEdit" class="border-t border-neutral-100">
@@ -379,6 +402,11 @@ const addingGroup = ref(false)
 const draggingId = ref<string | null>(null)
 const dragOverId = ref<string | null>(null)
 
+// Drag and drop de tarefas
+const draggingTaskId = ref<string | null>(null)
+const dragOverTaskId = ref<string | null>(null)
+const dragOverGroupId = ref<string | null>(null)
+
 function onDragStart(groupId: string) {
   draggingId.value = groupId
 }
@@ -417,34 +445,221 @@ function onDragEnd() {
   dragOverId.value = null
 }
 
-// Touch drag and drop
-let touchDraggingId: string | null = null
-let touchStartY = 0
-
-function onTouchStart(e: TouchEvent, groupId: string) {
-  touchDraggingId = groupId
-  touchStartY = e.touches[0]!.clientY
-  draggingId.value = groupId
+// Task drag and drop handlers
+function onTaskDragStart(taskId: string) {
+  draggingTaskId.value = taskId
 }
 
-function onTouchMove(e: TouchEvent) {
+function onTaskDragOver(e: DragEvent, taskId: string) {
   e.preventDefault()
-  if (!touchDraggingId) return
-  const touch = e.touches[0]!
-  const el = document.elementFromPoint(touch.clientX, touch.clientY)
-  const groupEl = el?.closest('[data-group-id]') as HTMLElement | null
-  if (groupEl) {
-    dragOverId.value = groupEl.dataset.groupId ?? null
+  dragOverTaskId.value = taskId
+  dragOverGroupId.value = null
+}
+
+function onGroupDragOver(e: DragEvent, groupId: string) {
+  e.preventDefault()
+  if (draggingTaskId.value) {
+    dragOverGroupId.value = groupId
+    dragOverTaskId.value = null
+  } else if (draggingId.value) {
+    dragOverId.value = groupId
   }
 }
 
-function onTouchEnd() {
-  if (touchDraggingId && dragOverId.value && touchDraggingId !== dragOverId.value) {
-    onDrop(dragOverId.value)
+async function onGroupDrop(groupId: string) {
+  if (draggingTaskId.value) {
+    // Task dropped on group (for empty groups or group header)
+    await handleTaskDropOnGroup(groupId)
+  } else if (draggingId.value) {
+    // Group reorder
+    onDrop(groupId)
   }
-  touchDraggingId = null
-  draggingId.value = null
-  dragOverId.value = null
+  dragOverGroupId.value = null
+}
+
+async function onTaskDrop(targetTaskId: string, groupId: string) {
+  if (!draggingTaskId.value || draggingTaskId.value === targetTaskId) {
+    draggingTaskId.value = null
+    dragOverTaskId.value = null
+    return
+  }
+
+  // Find which group the dragged task currently belongs to
+  let sourceGroupId: string | null = null
+  let draggedTask: TaskRow | null = null
+  
+  for (const gId in tasksByGroup.value) {
+    const tasks = tasksByGroup.value[gId]
+    if (!tasks) continue
+    const task = tasks.find(t => t.id === draggingTaskId.value)
+    if (task) {
+      sourceGroupId = gId
+      draggedTask = task
+      break
+    }
+  }
+
+  if (!sourceGroupId || !draggedTask) {
+    draggingTaskId.value = null
+    dragOverTaskId.value = null
+    return
+  }
+
+  // Check if this is a cross-group move
+  if (sourceGroupId !== groupId) {
+    // Cross-group move
+    await handleCrossGroupMove(draggedTask, sourceGroupId, groupId)
+  } else {
+    // Same group reorder
+    await handleSameGroupReorder(groupId, targetTaskId)
+  }
+
+  draggingTaskId.value = null
+  dragOverTaskId.value = null
+}
+
+async function handleSameGroupReorder(groupId: string, targetTaskId: string) {
+  console.log('[handleSameGroupReorder] Starting reorder:', { groupId, targetTaskId, draggingTaskId: draggingTaskId.value })
+  
+  const tasks = tasksByGroup.value[groupId]
+  if (!tasks) {
+    console.log('[handleSameGroupReorder] No tasks found for group')
+    return
+  }
+
+  const fromIdx = tasks.findIndex(t => t.id === draggingTaskId.value)
+  const toIdx = tasks.findIndex(t => t.id === targetTaskId)
+
+  console.log('[handleSameGroupReorder] Indices:', { fromIdx, toIdx })
+
+  if (fromIdx === -1 || toIdx === -1) {
+    console.log('[handleSameGroupReorder] Invalid indices')
+    return
+  }
+
+  // Reordenar array localmente (otimistic update)
+  const reordered = [...tasks]
+  const [movedTask] = reordered.splice(fromIdx, 1)
+  if (!movedTask) {
+    console.log('[handleSameGroupReorder] No task to move')
+    return
+  }
+  
+  reordered.splice(toIdx, 0, movedTask)
+  
+  console.log('[handleSameGroupReorder] Reordered tasks:', reordered.map(t => t.title))
+  
+  tasksByGroup.value[groupId] = reordered
+
+  // Persistir no backend
+  const { reorderTasks } = useTasks()
+  const taskIds = reordered.map(t => t.id)
+  
+  console.log('[handleSameGroupReorder] Calling backend with task IDs:', taskIds)
+  
+  const success = await reorderTasks({ groupId, taskIds })
+  
+  console.log('[handleSameGroupReorder] Backend result:', success)
+  
+  if (!success) {
+    console.log('[handleSameGroupReorder] Rollback - refreshing tasks')
+    // Rollback em caso de erro
+    await refreshGroupTasks(groupId, showArchived.value)
+  }
+}
+
+async function handleCrossGroupMove(task: TaskRow, sourceGroupId: string, targetGroupId: string) {
+  // Save original state for rollback
+  const originalSourceTasks = [...(tasksByGroup.value[sourceGroupId] || [])]
+  const originalTargetTasks = [...(tasksByGroup.value[targetGroupId] || [])]
+
+  // Optimistic update: remove from source
+  const sourceTasks = tasksByGroup.value[sourceGroupId]
+  if (sourceTasks) {
+    const index = sourceTasks.findIndex(t => t.id === task.id)
+    if (index !== -1) {
+      sourceTasks.splice(index, 1)
+    }
+  }
+
+  // Optimistic update: add to target
+  const targetTasks = tasksByGroup.value[targetGroupId]
+  if (targetTasks) {
+    const updatedTask = { ...task, group_id: targetGroupId }
+    targetTasks.push(updatedTask)
+  } else {
+    tasksByGroup.value[targetGroupId] = [{ ...task, group_id: targetGroupId }]
+  }
+
+  // Call backend API
+  const { moveTaskToGroup } = useTasks()
+  
+  console.log('Moving task:', {
+    taskId: task.id,
+    sourceGroupId,
+    targetGroupId
+  })
+  
+  const success = await moveTaskToGroup({
+    taskId: task.id,
+    sourceGroupId,
+    targetGroupId
+  })
+
+  console.log('Move result:', success)
+
+  if (success) {
+    // Refresh both groups to sync with backend
+    await Promise.all([
+      refreshGroupTasks(sourceGroupId, showArchived.value),
+      refreshGroupTasks(targetGroupId, showArchived.value)
+    ])
+  } else {
+    // Rollback on error
+    tasksByGroup.value[sourceGroupId] = originalSourceTasks
+    tasksByGroup.value[targetGroupId] = originalTargetTasks
+    
+    // Show error message
+    console.error('Failed to move task between groups')
+    alert('Erro ao mover tarefa entre grupos. Verifique o console.')
+  }
+}
+
+function onTaskDragEnd() {
+  draggingTaskId.value = null
+  dragOverTaskId.value = null
+  dragOverGroupId.value = null
+}
+
+async function handleTaskDropOnGroup(targetGroupId: string) {
+  if (!draggingTaskId.value) return
+
+  // Find which group the dragged task currently belongs to
+  let sourceGroupId: string | null = null
+  let draggedTask: TaskRow | null = null
+  
+  for (const gId in tasksByGroup.value) {
+    const tasks = tasksByGroup.value[gId]
+    if (!tasks) continue
+    const task = tasks.find(t => t.id === draggingTaskId.value)
+    if (task) {
+      sourceGroupId = gId
+      draggedTask = task
+      break
+    }
+  }
+
+  if (!sourceGroupId || !draggedTask) {
+    draggingTaskId.value = null
+    return
+  }
+
+  // Only handle cross-group moves here
+  if (sourceGroupId !== targetGroupId) {
+    await handleCrossGroupMove(draggedTask, sourceGroupId, targetGroupId)
+  }
+
+  draggingTaskId.value = null
 }
 
 // Contexto de posição para novo grupo

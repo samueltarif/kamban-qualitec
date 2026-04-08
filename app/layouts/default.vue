@@ -21,6 +21,7 @@
       @add-workspace="handleAddWorkspace"
       @user-menu="handleUserMenu"
       @navigate="handleNavigate"
+      @toggle="toggleSidebar"
     />
 
     <!-- Coluna direita: header + conteúdo + footer -->
@@ -71,13 +72,29 @@ const workspaces = computed(() =>
 
 function checkMobile() {
   isMobile.value = window.innerWidth < 768
-  if (!isMobile.value && !sidebarOpen.value) {
-    sidebarOpen.value = true
+  if (!isMobile.value) {
+    // Restaurar estado do localStorage em desktop
+    const savedState = localStorage.getItem('sidebar-open')
+    sidebarOpen.value = savedState !== null ? savedState === 'true' : true
   }
 }
 
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
+  // Salvar estado no localStorage (apenas desktop)
+  if (!isMobile.value) {
+    localStorage.setItem('sidebar-open', String(sidebarOpen.value))
+  }
+}
+
+function handleKeyboard(e: KeyboardEvent) {
+  // Ctrl + . para toggle sidebar (igual Monday.com)
+  if (e.ctrlKey && e.key === '.') {
+    e.preventDefault()
+    if (!isMobile.value) {
+      toggleSidebar()
+    }
+  }
 }
 
 function handleAddWorkspace() {
@@ -99,6 +116,7 @@ function handleNavigate() {
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  window.addEventListener('keydown', handleKeyboard)
   fetchFavorites()
   fetchRecents()
   fetchWorkspaces()
@@ -106,6 +124,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('keydown', handleKeyboard)
 })
 </script>
 

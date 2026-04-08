@@ -144,8 +144,9 @@ export function useBoardData(boardId: string) {
       
       const tasksQuery = supabase
         .from('tasks')
-        .select('id, title, group_id, board_id, status_id, priority_id, due_date, start_date, description, notes, budget, updated_at')
+        .select('id, title, group_id, board_id, status_id, priority_id, due_date, start_date, description, notes, budget, updated_at, position')
         .in('group_id', groupIds)
+        .order('position', { ascending: true })
 
       if (showArchived) {
         tasksQuery.not('archived_at', 'is', null)
@@ -198,8 +199,9 @@ export function useBoardData(boardId: string) {
   async function refreshGroupTasks(groupId: string, showArchived = false) {
     const query = supabase
       .from('tasks')
-      .select('id, title, group_id, board_id, status_id, priority_id, due_date, start_date, description, notes, budget, updated_at')
+      .select('id, title, group_id, board_id, status_id, priority_id, due_date, start_date, description, notes, budget, updated_at, position')
       .eq('group_id', groupId)
+      .order('position', { ascending: true })
 
     if (showArchived) {
       query.not('archived_at', 'is', null)

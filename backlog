@@ -1142,7 +1142,10 @@ Critério de aceite: Ordem persistida.
 
 Prioridade: Média.
 
-Tarefa 5.2.13 — Adicionar etiquetas à tarefa
+
+
+
+Tarefa 5.2.13 — Adicionar etiquetas à tarefa ✅
 
 Descrição curta: Relacionar labels coloridas.
 
@@ -1154,9 +1157,10 @@ Critério de aceite: Etiquetas aparecem na tarefa e filtros.
 
 Prioridade: Média.
 
+
 Fase 6 — Interações avançadas do board
 Épico 6.1 — Drag and drop e manipulação
-Tarefa 6.1.1 — Arrastar tarefa dentro do mesmo grupo
+Tarefa 6.1.1 ✅ — Arrastar tarefa dentro do mesmo grupo
 
 Descrição curta: Reordenar tarefa por drag and drop.
 
@@ -1167,8 +1171,8 @@ Dependências: 5.1.2.
 Critério de aceite: Nova ordem é persistida.
 
 Prioridade: Alta.
-
-Tarefa 6.1.2 — Arrastar tarefa entre grupos
+✅
+Tarefa 6.1.2 ✅ — Arrastar tarefa entre grupos
 
 Descrição curta: Mover item de um grupo para outro.
 
@@ -1205,7 +1209,7 @@ Critério de aceite: Movimento funciona em dispositivos touch.
 Prioridade: Média.
 
 
-Você tem razão! Pulei a Fase 7: Responsividade Completa. Aqui está completa:
+ Fase 7: Responsividade Completa. Aqui está completa:
 
 Fase 7: Responsividade Completa
 Épico 7.1: Mobile First (< 640px)
