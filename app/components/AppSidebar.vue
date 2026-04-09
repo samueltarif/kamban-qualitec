@@ -212,6 +212,7 @@ const mainItems = [
   { label: 'Início',        to: '/',             icon: 'home' },
   { label: 'Meu trabalho',  to: '/mywork',       icon: 'user' },
   { label: 'Quadros',       to: '/boards',       icon: 'grid' },
+  { label: 'Painéis',       to: '/dashboards',   icon: 'chart' },
   { label: 'Coleções',      to: '/collections',  icon: 'collection' },
   { label: 'Áreas',         to: '/workspaces',   icon: 'folder' },
   { label: 'Membros',       to: '/members',      icon: 'users' },

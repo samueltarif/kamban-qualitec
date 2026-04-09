@@ -53,7 +53,7 @@
         v-for="workspace in workspaces"
         :key="workspace.id"
         :workspace="workspace"
-        @click="navigateTo(`/workspaces/${workspace.slug}`)"
+        @click="handleNavigateToWorkspace(workspace)"
         @edit="handleEdit(workspace)"
         @delete="handleDeleteConfirm(workspace)"
       />
@@ -187,10 +187,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useWorkspaces } from '~/composables/useWorkspaces'
 import { useAuth } from '~/composables/useAuth'
-import type { Database, Tables } from '~/shared/types/database'
+import type { Database, Tables } from '#shared/types/database'
 
+const router = useRouter()
 const { workspaces, loading, error, fetchWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } = useWorkspaces()
 const { isMaster } = useAuth()
 
@@ -217,6 +219,14 @@ const visibilityOptions = [
   { value: 'org', label: 'Organização (todos podem ver)' },
   { value: 'private', label: 'Privado (apenas membros convidados)' }
 ]
+
+function handleNavigateToWorkspace(workspace: Tables<'workspaces'>) {
+  console.log('Navigating to workspace:', workspace.slug)
+  console.log('Target URL:', `/workspaces/${workspace.slug}`)
+  router.push(`/workspaces/${workspace.slug}`)
+    .then(() => console.log('Navigation successful'))
+    .catch(err => console.error('Navigation failed:', err))
+}
 
 function handleOpenModal() {
   console.log('Opening modal, isMaster:', isMaster.value)

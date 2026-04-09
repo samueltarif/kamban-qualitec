@@ -64,6 +64,9 @@
           <img src="/images/logo_qualitec.png" alt="Qualitec" class="h-9 object-contain" />
         </div>
 
+        <!-- Animação profissional voador -->
+        <LoginHeroAnimation />
+
         <!-- Toggle login / cadastro -->
         <div class="flex bg-white/10 lg:bg-neutral-100 rounded-xl p-1 mb-7">
           <button

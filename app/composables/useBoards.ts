@@ -53,38 +53,65 @@ export function useBoards() {
     visibility: Database['public']['Enums']['visibility_type']
     cover_color?: string
   }) {
-    if (!authUser.value) return null
+    if (!authUser.value) {
+      error.value = 'Usuário não autenticado'
+      return null
+    }
 
     try {
       const supabase = getClient()
 
       // Gerar UUID no cliente para saber o board_id antes de inserir
-      // Isso evita o problema de RLS: board privado não pode ser lido
-      // antes de ter o owner em board_members
       const boardId = crypto.randomUUID()
 
-      const { error: insertError } = await supabase
-        .from('boards')
-        .insert({ id: boardId, ...payload, created_by: authUser.value.id })
+      console.log('[useBoards] Creating board:', {
+        boardId,
+        payload,
+        userId: authUser.value.id
+      })
 
-      if (insertError) throw insertError
+      const { data, error: insertError } = await supabase
+        .from('boards')
+        .insert({ 
+          id: boardId, 
+          ...payload, 
+          created_by: authUser.value.id 
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('[useBoards] Insert error:', insertError)
+        throw insertError
+      }
+
+      console.log('[useBoards] Board created:', data)
 
       // Adicionar criador como owner (necessário para RLS de boards privados)
-      await supabase
+      const { error: memberError } = await supabase
         .from('board_members')
         .insert({ board_id: boardId, user_id: authUser.value.id, access_role: 'owner' })
 
+      if (memberError) {
+        console.error('[useBoards] Member error:', memberError)
+      }
+
       // Criar grupo padrão
-      await supabase
+      const { error: groupError } = await supabase
         .from('task_groups')
         .insert({ board_id: boardId, name: 'Tarefas', color: '#6366f1', sort_order: 0, is_collapsed: false })
+
+      if (groupError) {
+        console.error('[useBoards] Group error:', groupError)
+      }
 
       await fetchBoards(payload.workspace_id)
 
       // Retornar o board da lista já atualizada
       return boards.value.find(b => b.id === boardId) ?? null
     } catch (e: any) {
-      error.value = e.message
+      console.error('[useBoards] Create board error:', e)
+      error.value = e.message || 'Erro ao criar quadro'
       return null
     }
   }
@@ -126,5 +153,18 @@ export function useBoards() {
     }
   }
 
-  return { boards, loading, error, fetchBoards, createBoard, updateBoard, deleteBoard }
+  async function fetchBoardsByWorkspace(workspaceId: string) {
+    return fetchBoards(workspaceId)
+  }
+
+  return { 
+    boards, 
+    loading, 
+    error, 
+    fetchBoards, 
+    fetchBoardsByWorkspace,
+    createBoard, 
+    updateBoard, 
+    deleteBoard 
+  }
 }

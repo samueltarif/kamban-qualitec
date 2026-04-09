@@ -52,7 +52,7 @@
       </ClientOnly>
     </div>
 
-    <LoadingState v-if="loading" message="Carregando board..." />
+    <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :message="error" @retry="load" />
 
     <!-- Grupos -->
@@ -326,6 +326,15 @@ import { useTasks, type TaskRow } from '~/composables/useTasks'
 
 const route = useRoute()
 const boardId = route.params.id as string
+
+console.log('[boards/[id].vue] Route params:', route.params)
+console.log('[boards/[id].vue] Board ID:', boardId)
+
+// Validar se o ID é válido (não é o literal "[id]")
+if (!boardId || boardId === '[id]' || boardId.includes('[')) {
+  console.error('[boards/[id].vue] Invalid board ID, redirecting to /boards')
+  navigateTo('/boards')
+}
 
 // Usar composable otimizado para carregar dados
 const {

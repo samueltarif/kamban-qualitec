@@ -99,7 +99,7 @@ export default {
           600: '#2563eb',
           700: '#1d4ed8',
           800: '#1e40af',
-          900: '#1e3a8a',
+          900: '#24408dff',
           DEFAULT: '#3b82f6'
         }
       },
@@ -108,15 +108,28 @@ export default {
         primary: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
       },
       fontSize: {
-        xs: ['0.75rem', { lineHeight: '1.25' }],
-        sm: ['0.875rem', { lineHeight: '1.5' }],
-        base: ['1rem', { lineHeight: '1.5' }],
-        lg: ['1.125rem', { lineHeight: '1.75' }],
-        xl: ['1.25rem', { lineHeight: '1.75' }],
-        '2xl': ['1.5rem', { lineHeight: '2' }],
-        '3xl': ['1.875rem', { lineHeight: '2.25' }],
-        '4xl': ['2.25rem', { lineHeight: '2.5' }],
-        '5xl': ['3rem', { lineHeight: '1' }]
+        // Escala base
+        xs:   ['0.75rem',    { lineHeight: '1.25' }],   // 12px — micro
+        sm:   ['0.875rem',   { lineHeight: '1.5' }],    // 14px — label / body-sm
+        '15': ['0.9375rem',  { lineHeight: '1.55' }],   // 15px — body-md
+        base: ['1rem',       { lineHeight: '1.6' }],    // 16px — body-lg
+        lg:   ['1.125rem',   { lineHeight: '1.5' }],    // 18px — headline
+        xl:   ['1.25rem',    { lineHeight: '1.4' }],    // 20px — title-sm
+        '2xl':['1.5rem',     { lineHeight: '1.35' }],   // 24px — title-md
+        '3xl':['1.875rem',   { lineHeight: '1.25' }],   // 30px — title-lg
+        '4xl':['2.25rem',    { lineHeight: '1.15' }],   // 36px — display-md
+        '5xl':['3rem',       { lineHeight: '1.1' }],    // 48px — display-lg
+        // Micro
+        '11': ['0.6875rem',  { lineHeight: '1.3' }],    // 11px — micro / overline
+      },
+      letterSpacing: {
+        tighter: '-0.03em',
+        tight:   '-0.025em',
+        snug:    '-0.015em',
+        normal:  '0',
+        wide:    '0.01em',
+        wider:   '0.02em',
+        widest:  '0.08em',
       },
       spacing: {
         '1': '0.25rem',

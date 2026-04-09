@@ -1,12 +1,12 @@
 <template>
   <div
-    class="bg-white border border-neutral-200 rounded-xl p-6 hover:shadow-lg hover:border-primary-300 transition-all group relative"
+    class="bg-white border border-neutral-200 rounded-xl p-6 hover:shadow-lg hover:border-primary-300 transition-all group relative cursor-pointer"
+    @click="$emit('click')"
   >
     <!-- Icon & Badge & Menu -->
     <div class="flex items-start justify-between mb-4">
       <div 
-        class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors cursor-pointer"
-        @click="$emit('click')"
+        class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors"
       >
         <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -66,7 +66,7 @@
     </div>
 
     <!-- Content -->
-    <div class="mb-4 cursor-pointer" @click="$emit('click')">
+    <div class="mb-4">
       <h3 class="text-heading-sm font-semibold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors">
         {{ workspace.name }}
       </h3>
@@ -76,7 +76,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between text-label-sm text-muted cursor-pointer" @click="$emit('click')">
+    <div class="flex items-center justify-between text-label-sm text-muted">
       <span class="flex items-center gap-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -93,7 +93,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Tables } from '~/shared/types/database'
+import type { Tables } from '#shared/types/database'
 
 defineProps<{
   workspace: Tables<'workspaces'>
@@ -127,8 +127,12 @@ function formatDate(dateString: string): string {
 }
 
 // Directive para fechar menu ao clicar fora
+interface ClickOutsideElement extends HTMLElement {
+  clickOutsideEvent?: (event: Event) => void
+}
+
 const vClickOutside = {
-  mounted(el: HTMLElement, binding: any) {
+  mounted(el: ClickOutsideElement, binding: any) {
     el.clickOutsideEvent = (event: Event) => {
       if (!(el === event.target || el.contains(event.target as Node))) {
         binding.value()
@@ -136,7 +140,7 @@ const vClickOutside = {
     }
     document.addEventListener('click', el.clickOutsideEvent)
   },
-  unmounted(el: HTMLElement & { clickOutsideEvent?: any }) {
+  unmounted(el: ClickOutsideElement) {
     if (el.clickOutsideEvent) {
       document.removeEventListener('click', el.clickOutsideEvent)
     }
