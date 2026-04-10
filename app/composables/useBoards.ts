@@ -61,13 +61,31 @@ export function useBoards() {
     try {
       const supabase = getClient()
 
+      // Validar se o workspace existe e pertence à organização do usuário
+      const { data: workspaceCheck, error: workspaceError } = await supabase
+        .from('workspaces')
+        .select('id, name, organization_id')
+        .eq('id', payload.workspace_id)
+        .eq('organization_id', authUser.value.organizationId)
+        .single()
+
+      if (workspaceError || !workspaceCheck) {
+        console.error('[useBoards] Workspace validation failed:', workspaceError)
+        error.value = 'Área de trabalho inválida ou não encontrada'
+        return null
+      }
+
+      console.log('[useBoards] Workspace validated:', workspaceCheck)
+
       // Gerar UUID no cliente para saber o board_id antes de inserir
       const boardId = crypto.randomUUID()
 
       console.log('[useBoards] Creating board:', {
         boardId,
         payload,
-        userId: authUser.value.id
+        userId: authUser.value.id,
+        userOrg: authUser.value.organizationId,
+        userRole: authUser.value.roleGlobal
       })
 
       const { data, error: insertError } = await supabase
@@ -82,6 +100,7 @@ export function useBoards() {
 
       if (insertError) {
         console.error('[useBoards] Insert error:', insertError)
+        error.value = insertError.message || 'Erro ao criar quadro'
         throw insertError
       }
 

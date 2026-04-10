@@ -148,6 +148,11 @@
           :options="visibilityOptions"
         />
 
+        <!-- Error message -->
+        <div v-if="error" class="bg-danger-50 border border-danger-200 rounded-xl px-4 py-3">
+          <p class="text-body-sm text-danger-700">{{ error }}</p>
+        </div>
+
         <div class="flex gap-3 justify-end pt-4">
           <BaseButton
             type="button"
@@ -159,9 +164,9 @@
           <BaseButton
             type="submit"
             variant="primary"
-            :disabled="!newBoard.name"
+            :disabled="!newBoard.name || loading"
           >
-            Criar quadro
+            {{ loading ? 'Criando...' : 'Criar quadro' }}
           </BaseButton>
         </div>
       </form>
@@ -214,7 +219,16 @@ async function fetchBoards() {
 }
 
 async function handleCreateBoard() {
-  if (!workspace.value) return
+  if (!workspace.value) {
+    console.error('[slug].vue handleCreateBoard: workspace not found')
+    return
+  }
+
+  console.log('[slug].vue handleCreateBoard: creating board with workspace:', {
+    workspaceId: workspace.value.id,
+    workspaceName: workspace.value.name,
+    workspaceSlug: workspace.value.slug
+  })
 
   const result = await createBoard({
     name: newBoard.value.name,
@@ -232,6 +246,8 @@ async function handleCreateBoard() {
       board_type: 'list',
       visibility: 'org'
     }
+  } else {
+    console.error('[slug].vue handleCreateBoard: failed to create board')
   }
 }
 
