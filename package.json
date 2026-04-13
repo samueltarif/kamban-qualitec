@@ -20,6 +20,7 @@
     "@vueuse/core": "^14.2.1",
     "@vueuse/integrations": "^14.2.1",
     "lottie-web": "^5.13.0",
+    "nodemailer": "^8.0.5",
     "nuxt": "^4.4.2",
     "sortablejs": "^1.15.7",
     "three": "^0.183.2",
@@ -29,6 +30,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^20.8.9",

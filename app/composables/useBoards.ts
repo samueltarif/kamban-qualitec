@@ -85,34 +85,81 @@ export function useBoards() {
         payload,
         userId: authUser.value.id,
         userOrg: authUser.value.organizationId,
-        userRole: authUser.value.roleGlobal
+        userRole: authUser.value.role
       })
 
-      const { data, error: insertError } = await supabase
-        .from('boards')
-        .insert({ 
-          id: boardId, 
-          ...payload, 
-          created_by: authUser.value.id 
-        })
-        .select()
-        .single()
+      // Log do token JWT para debug
+      const session = await supabase.auth.getSession()
+      console.log('[useBoards] Session check:', {
+        hasSession: !!session.data.session,
+        userId: session.data.session?.user?.id,
+        tokenPresent: !!session.data.session?.access_token
+      })
 
-      if (insertError) {
-        console.error('[useBoards] Insert error:', insertError)
-        error.value = insertError.message || 'Erro ao criar quadro'
-        throw insertError
-      }
+      // Para boards privados, adicionar o membro ANTES de criar o board
+      // para evitar problemas de RLS
+      if (payload.visibility === 'private') {
+        // Primeiro, inserir sem .select() para evitar erro de RLS ao ler de volta
+        const { error: insertError } = await supabase
+          .from('boards')
+          .insert({ 
+            id: boardId, 
+            ...payload, 
+            created_by: authUser.value.id 
+          })
 
-      console.log('[useBoards] Board created:', data)
+        if (insertError) {
+          console.error('[useBoards] Insert error:', insertError)
+          error.value = insertError.message || 'Erro ao criar quadro'
+          throw insertError
+        }
 
-      // Adicionar criador como owner (necessário para RLS de boards privados)
-      const { error: memberError } = await supabase
-        .from('board_members')
-        .insert({ board_id: boardId, user_id: authUser.value.id, access_role: 'owner' })
+        console.log('[useBoards] Private board created (no select):', boardId)
 
-      if (memberError) {
-        console.error('[useBoards] Member error:', memberError)
+        // Adicionar criador como owner
+        const { error: memberError } = await supabase
+          .from('board_members')
+          .insert({ board_id: boardId, user_id: authUser.value.id, access_role: 'owner' })
+
+        if (memberError) {
+          console.error('[useBoards] Member error:', memberError)
+          error.value = 'Erro ao adicionar membro ao quadro'
+          throw memberError
+        }
+
+        console.log('[useBoards] Owner added to private board')
+
+        // Agora buscar o board criado (agora que o usuário é membro)
+        const { data, error: selectError } = await supabase
+          .from('boards')
+          .select()
+          .eq('id', boardId)
+          .single()
+
+        if (selectError || !data) {
+          console.error('[useBoards] Select error:', selectError)
+        } else {
+          console.log('[useBoards] Board fetched:', data)
+        }
+      } else {
+        // Para boards públicos, pode criar e ler normalmente
+        const { data, error: insertError } = await supabase
+          .from('boards')
+          .insert({ 
+            id: boardId, 
+            ...payload, 
+            created_by: authUser.value.id 
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('[useBoards] Insert error:', insertError)
+          error.value = insertError.message || 'Erro ao criar quadro'
+          throw insertError
+        }
+
+        console.log('[useBoards] Public board created:', data)
       }
 
       // Criar grupo padrão

@@ -138,6 +138,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'deleted'): void
+  (e: 'updated'): void
 }>()
 
 const { subtasks, loading, updateSubtask, deleteSubtask, fetchSubtasks, toggleSubtask } = useSubtasks(props.taskId)
@@ -177,92 +178,199 @@ watch(() => [props.subtaskId, props.modelValue] as const, async ([id, isOpen]) =
 async function saveTitle() {
   if (localTitle.value.trim() && localTitle.value !== subtask.value?.title) {
     const oldValue = subtask.value?.title
+    console.log('[SubtaskDetailPanel] Saving title:', { old: oldValue, new: localTitle.value.trim() })
+    
     // Atualização otimista instantânea
     if (subtask.value) {
       subtask.value.title = localTitle.value.trim()
     }
-    // Salvar no servidor em background (sem await)
-    updateSubtask(props.subtaskId, { title: localTitle.value.trim() })
-    // Registrar atividade
-    logActivity('updated_title', {
-      old_value: oldValue,
-      new_value: localTitle.value.trim()
-    })
+    
+    try {
+      // Salvar no servidor
+      await updateSubtask(props.subtaskId, { title: localTitle.value.trim() })
+      console.log('[SubtaskDetailPanel] Title saved successfully')
+      
+      // Registrar atividade
+      await logActivity('updated_title', {
+        old_value: oldValue,
+        new_value: localTitle.value.trim()
+      })
+      
+      // Notificar que foi atualizado
+      emit('updated')
+    } catch (error) {
+      console.error('[SubtaskDetailPanel] Error saving title:', error)
+      // Reverter em caso de erro
+      if (subtask.value && oldValue) {
+        subtask.value.title = oldValue
+        localTitle.value = oldValue
+      }
+    }
   }
 }
 
 async function saveNotes() {
   if (localNotes.value !== subtask.value?.notes) {
+    const oldValue = subtask.value?.notes
+    console.log('[SubtaskDetailPanel] Saving notes')
+    
     // Atualização otimista instantânea
     if (subtask.value) {
       subtask.value.notes = localNotes.value
     }
-    // Salvar no servidor em background (sem await)
-    updateSubtask(props.subtaskId, { notes: localNotes.value })
-    // Registrar atividade
-    logActivity('updated_notes')
+    
+    try {
+      // Salvar no servidor
+      await updateSubtask(props.subtaskId, { notes: localNotes.value })
+      console.log('[SubtaskDetailPanel] Notes saved successfully')
+      
+      // Registrar atividade
+      await logActivity('updated_notes')
+    } catch (error) {
+      console.error('[SubtaskDetailPanel] Error saving notes:', error)
+      // Reverter em caso de erro
+      if (subtask.value) {
+        subtask.value.notes = oldValue
+        localNotes.value = oldValue || ''
+      }
+    }
   }
 }
 
-function saveStatus() {
+async function saveStatus() {
   const oldValue = subtask.value?.status_id
   const statusName = statuses.value.find(s => s.id === localStatusId.value)?.name
   const oldStatusName = statuses.value.find(s => s.id === oldValue)?.name
+  
+  console.log('[SubtaskDetailPanel] Saving status:', { old: oldStatusName, new: statusName })
   
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.status_id = localStatusId.value
   }
-  // Salvar no servidor em background (sem await)
-  updateSubtask(props.subtaskId, { status_id: localStatusId.value })
-  // Registrar atividade
-  logActivity('updated_status', {
-    old_value: oldStatusName || 'Sem status',
-    new_value: statusName || 'Sem status'
-  })
+  
+  // Notificar IMEDIATAMENTE para atualizar a UI
+  emit('updated')
+  
+  try {
+    // Salvar no servidor em background
+    await updateSubtask(props.subtaskId, { status_id: localStatusId.value })
+    console.log('[SubtaskDetailPanel] Status saved successfully')
+    
+    // Registrar atividade
+    await logActivity('updated_status', {
+      old_value: oldStatusName || 'Sem status',
+      new_value: statusName || 'Sem status'
+    })
+  } catch (error) {
+    console.error('[SubtaskDetailPanel] Error saving status:', error)
+    // Reverter em caso de erro
+    if (subtask.value) {
+      subtask.value.status_id = oldValue
+      localStatusId.value = oldValue
+    }
+    // Notificar novamente para reverter a UI
+    emit('updated')
+  }
 }
 
-function savePriority() {
+async function savePriority() {
   const oldValue = subtask.value?.priority_id
   const priorityName = priorities.value.find(p => p.id === localPriorityId.value)?.name
   const oldPriorityName = priorities.value.find(p => p.id === oldValue)?.name
+  
+  console.log('[SubtaskDetailPanel] Saving priority:', { old: oldPriorityName, new: priorityName })
   
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.priority_id = localPriorityId.value
   }
-  // Salvar no servidor em background (sem await)
-  updateSubtask(props.subtaskId, { priority_id: localPriorityId.value })
-  // Registrar atividade
-  logActivity('updated_priority', {
-    old_value: oldPriorityName || 'Sem prioridade',
-    new_value: priorityName || 'Sem prioridade'
-  })
+  
+  // Notificar IMEDIATAMENTE para atualizar a UI
+  emit('updated')
+  
+  try {
+    // Salvar no servidor em background
+    await updateSubtask(props.subtaskId, { priority_id: localPriorityId.value })
+    console.log('[SubtaskDetailPanel] Priority saved successfully')
+    
+    // Registrar atividade
+    await logActivity('updated_priority', {
+      old_value: oldPriorityName || 'Sem prioridade',
+      new_value: priorityName || 'Sem prioridade'
+    })
+  } catch (error) {
+    console.error('[SubtaskDetailPanel] Error saving priority:', error)
+    // Reverter em caso de erro
+    if (subtask.value) {
+      subtask.value.priority_id = oldValue
+      localPriorityId.value = oldValue
+    }
+    // Notificar novamente para reverter a UI
+    emit('updated')
+  }
 }
 
-function saveDueDate() {
+async function saveDueDate() {
   const oldValue = subtask.value?.due_date
+  console.log('[SubtaskDetailPanel] Saving due date:', { old: oldValue, new: localDueDate.value })
+  
   // Atualização otimista instantânea
   if (subtask.value) {
     subtask.value.due_date = localDueDate.value || null
   }
-  // Salvar no servidor em background (sem await)
-  updateSubtask(props.subtaskId, { due_date: localDueDate.value || null })
-  // Registrar atividade
-  logActivity('updated_due_date', {
-    old_value: oldValue || 'Sem data',
-    new_value: localDueDate.value || 'Sem data'
-  })
+  
+  // Notificar IMEDIATAMENTE para atualizar a UI
+  emit('updated')
+  
+  try {
+    // Salvar no servidor em background
+    await updateSubtask(props.subtaskId, { due_date: localDueDate.value || null })
+    console.log('[SubtaskDetailPanel] Due date saved successfully')
+    
+    // Registrar atividade
+    await logActivity('updated_due_date', {
+      old_value: oldValue || 'Sem data',
+      new_value: localDueDate.value || 'Sem data'
+    })
+  } catch (error) {
+    console.error('[SubtaskDetailPanel] Error saving due date:', error)
+    // Reverter em caso de erro
+    if (subtask.value) {
+      subtask.value.due_date = oldValue
+      localDueDate.value = oldValue || ''
+    }
+    // Notificar novamente para reverter a UI
+    emit('updated')
+  }
 }
 
-function toggleDone() {
+async function toggleDone() {
   if (subtask.value) {
+    const oldValue = subtask.value.is_done
+    console.log('[SubtaskDetailPanel] Toggling done:', { old: oldValue, new: localIsDone.value })
+    
     // Atualização otimista instantânea - o v-model já atualizou localIsDone
     subtask.value.is_done = localIsDone.value
-    // Salvar no servidor em background (sem await)
-    toggleSubtask(props.subtaskId, localIsDone.value)
-    // Registrar atividade
-    logActivity(localIsDone.value ? 'marked_done' : 'marked_undone')
+    
+    // Notificar IMEDIATAMENTE para atualizar a UI
+    emit('updated')
+    
+    try {
+      // Salvar no servidor em background
+      await toggleSubtask(props.subtaskId, localIsDone.value)
+      console.log('[SubtaskDetailPanel] Done status saved successfully')
+      
+      // Registrar atividade
+      await logActivity(localIsDone.value ? 'marked_done' : 'marked_undone')
+    } catch (error) {
+      console.error('[SubtaskDetailPanel] Error toggling done:', error)
+      // Reverter em caso de erro
+      subtask.value.is_done = oldValue
+      localIsDone.value = oldValue
+      // Notificar novamente para reverter a UI
+      emit('updated')
+    }
   }
 }
 

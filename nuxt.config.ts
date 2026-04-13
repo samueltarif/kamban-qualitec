@@ -11,9 +11,18 @@ export default defineNuxtConfig({
     '#shared': fileURLToPath(new URL('./shared', import.meta.url))
   },
   runtimeConfig: {
+    // Private keys (server-side only)
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+    emailUser: process.env.NUXT_EMAIL_USER ?? '',
+    emailPass: process.env.NUXT_EMAIL_PASS ?? '',
+    emailSmtp: process.env.NUXT_EMAIL_SMTP ?? '',
+    emailPort: process.env.NUXT_EMAIL_PORT ?? '587',
+    
+    // Public keys (exposed to client)
     public: {
       supabaseUrl: process.env.SUPABASE_URL ?? '',
-      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? ''
+      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
+      appUrl: process.env.NUXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     }
   },
   app: {

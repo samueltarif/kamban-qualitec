@@ -55,8 +55,9 @@
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :message="error" @retry="load" />
 
-    <!-- Grupos -->
-    <div v-else class="flex-1 overflow-y-auto space-y-4">
+    <template v-else>
+      <!-- Grupos -->
+      <div class="flex-1 overflow-y-auto space-y-4">
 
       <div
         v-for="group in visibleGroups"
@@ -75,12 +76,12 @@
           class="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 group/header rounded-t-xl overflow-hidden"
           :style="`border-left: 4px solid ${group.color || '#6366f1'}`"
         >
-          <!-- Handle de drag (visível no hover) -->
+          <!-- Handle de drag (sempre visível com opacidade reduzida) -->
           <div
             v-if="canEdit"
             :draggable="true"
-            class="opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-muted shrink-0"
-            title="Arrastar para reordenar"
+            class="opacity-30 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-0.5 text-muted shrink-0"
+            title="Arrastar para reordenar grupo"
             @dragstart="onDragStart(group.id)"
             @dragend="onDragEnd"
           >
@@ -92,7 +93,7 @@
           <!-- Botão colapsar -->
           <button
             @click="toggleCollapse(group.id)"
-            class="p-0.5 text-muted hover:text-neutral-700 transition-colors rounded"
+            class="p-0.5 text-muted hover:text-neutral-700 motion-interactive rounded active-press"
           >
             <svg
               class="w-4 h-4 transition-transform"
@@ -123,6 +124,17 @@
 
           <!-- Ações do grupo (visíveis no hover) -->
           <div class="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+            <!-- Compartilhar grupo por e-mail -->
+            <button
+              v-if="canEdit"
+              @click="openShareGroupModal(group.id)"
+              class="p-1.5 text-muted hover:text-primary-600 rounded-lg hover:bg-primary-50 motion-interactive active-press"
+              title="Compartilhar grupo por e-mail"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </button>
             <!-- Adicionar grupo acima -->
             <button
               v-if="canEdit"
@@ -171,31 +183,37 @@
         </div>
 
         <!-- Conteúdo do grupo (tarefas) -->
-        <div 
-          v-if="!group.is_collapsed"
-          @dragover.prevent="onGroupDragOver($event, group.id)"
-          @drop="onGroupDrop(group.id)"
-        >
-          <div
-            v-for="task in tasksByGroup[group.id]"
-            :key="task.id"
-            :data-task-id="task.id"
-            class="relative"
-            :class="{
-              'opacity-40': draggingTaskId === task.id,
-              'border-t-2 border-primary-400': dragOverTaskId === task.id && draggingTaskId !== task.id
-            }"
-            @dragover.prevent="onTaskDragOver($event, task.id)"
-            @drop="onTaskDrop(task.id, group.id)"
+        <Transition name="expand">
+          <div 
+            v-if="!group.is_collapsed"
+            @dragover.prevent="onGroupDragOver($event, group.id)"
+            @drop="onGroupDrop(group.id)"
           >
-            <TaskRow
-              :task="task"
-              :can-edit="canEdit"
-              @task-deleted="handleTaskDeleted"
-              @drag-start="onTaskDragStart(task.id)"
-              @drag-end="onTaskDragEnd"
-            />
-          </div>
+          <!-- Cabeçalho das colunas (estilo Monday.com) -->
+          <TaskGroupHeader :board-id="boardId" />
+          
+          <TransitionGroup name="list" tag="div">
+            <div
+              v-for="task in tasksByGroup[group.id]"
+              :key="task.id"
+              :data-task-id="task.id"
+              class="relative motion-reorder"
+              :class="{
+                'dragging': draggingTaskId === task.id,
+                'border-t-2 border-primary-400': dragOverTaskId === task.id && draggingTaskId !== task.id
+              }"
+              @dragover.prevent="onTaskDragOver($event, task.id)"
+              @drop="onTaskDrop(task.id, group.id)"
+            >
+              <TaskRow
+                :task="task"
+                :can-edit="canEdit"
+                @task-deleted="handleTaskDeleted"
+                @drag-start="onTaskDragStart(task.id)"
+                @drag-end="onTaskDragEnd"
+              />
+            </div>
+          </TransitionGroup>
           <div
             v-if="!(tasksByGroup[group.id]?.length)"
             class="px-4 py-8 text-center transition-colors"
@@ -237,7 +255,7 @@
             <button
               v-else
               type="button"
-              class="w-full flex items-center gap-2 px-4 py-2.5 text-label-sm text-muted hover:text-primary-600 hover:bg-primary-50 transition-colors"
+              class="w-full flex items-center gap-2 px-4 py-2.5 text-label-sm text-muted hover:text-primary-600 hover:bg-primary-50 motion-interactive active-press"
               @click="openCreateTask(group.id)"
             >
               <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -247,6 +265,7 @@
             </button>
           </div>
         </div>
+        </Transition>
       </div>
 
       <!-- Aviso quando grupos estão ocultos -->
@@ -277,6 +296,7 @@
         Adicionar grupo
       </button>
     </div>
+    </template>
 
     <!-- Modal novo grupo -->
     <BaseModal v-model="showAddGroupModal" title="Novo grupo" size="sm">
@@ -312,6 +332,70 @@
           </BaseButton>
         </div>
       </form>
+    </BaseModal>
+
+    <!-- Modal compartilhar grupo -->
+    <BaseModal v-model="showShareGroupModal" title="Compartilhar grupo por e-mail" size="md">
+      <div class="space-y-4">
+        <p class="text-body-sm text-muted">
+          Selecione os membros que receberão um e-mail com as tarefas deste grupo.
+        </p>
+
+        <!-- Lista de membros do board -->
+        <div class="space-y-2 max-h-96 overflow-y-auto">
+          <label
+            v-for="member in boardMembers"
+            :key="member.id"
+            class="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50 cursor-pointer motion-interactive"
+          >
+            <input
+              type="checkbox"
+              :value="member.id"
+              v-model="selectedMembers"
+              class="w-4 h-4 text-primary-600 rounded focus:ring-2 focus:ring-primary-500"
+            />
+            <Avatar :profile="member" size="sm" />
+            <div class="flex-1 min-w-0">
+              <p class="text-label-sm text-default truncate">{{ member.full_name || member.email }}</p>
+              <p class="text-label-xs text-muted truncate">{{ member.email }}</p>
+            </div>
+          </label>
+
+          <div v-if="!boardMembers.length" class="text-center py-8">
+            <p class="text-body-sm text-muted">Nenhum membro encontrado</p>
+          </div>
+        </div>
+
+        <!-- Mensagem opcional -->
+        <div>
+          <label class="text-label-md text-default block mb-2">Mensagem (opcional)</label>
+          <textarea
+            v-model="shareMessage"
+            placeholder="Adicione uma mensagem personalizada..."
+            rows="3"
+            class="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-body-sm"
+            maxlength="500"
+          />
+        </div>
+
+        <div v-if="shareError" class="text-label-sm text-danger-600">
+          {{ shareError }}
+        </div>
+
+        <div class="flex gap-3 justify-end pt-2">
+          <BaseButton type="button" variant="ghost" @click="showShareGroupModal = false">
+            Cancelar
+          </BaseButton>
+          <BaseButton 
+            type="button" 
+            variant="primary" 
+            :disabled="!selectedMembers.length || sharingGroup"
+            @click="handleShareGroup"
+          >
+            {{ sharingGroup ? 'Enviando...' : `Enviar para ${selectedMembers.length} ${selectedMembers.length === 1 ? 'membro' : 'membros'}` }}
+          </BaseButton>
+        </div>
+      </div>
     </BaseModal>
 
   </div>
@@ -417,15 +501,19 @@ const dragOverTaskId = ref<string | null>(null)
 const dragOverGroupId = ref<string | null>(null)
 
 function onDragStart(groupId: string) {
+  console.log('[Group Drag] Starting drag for group:', groupId)
   draggingId.value = groupId
 }
 
 function onDragOver(e: DragEvent, groupId: string) {
   e.preventDefault()
+  console.log('[Group Drag] Dragging over group:', groupId)
   dragOverId.value = groupId
 }
 
 function onDrop(targetId: string) {
+  console.log('[Group Drag] Dropped on group:', targetId, 'dragging:', draggingId.value)
+  
   if (!draggingId.value || draggingId.value === targetId) {
     draggingId.value = null
     dragOverId.value = null
@@ -436,20 +524,36 @@ function onDrop(targetId: string) {
   const fromIdx = ids.indexOf(draggingId.value)
   const toIdx = ids.indexOf(targetId)
 
+  console.log('[Group Drag] Reordering from index', fromIdx, 'to', toIdx)
+
   if (fromIdx === -1 || toIdx === -1) return
 
-  // Reordenar array
+  // Reordenar array localmente (optimistic update)
   const newIds = [...ids]
   newIds.splice(fromIdx, 1)
   newIds.splice(toIdx, 0, draggingId.value)
 
+  console.log('[Group Drag] New order:', newIds)
+
+  // Atualizar o array local imediatamente
+  const reordered = newIds
+    .map((id, idx) => {
+      const g = groups.value.find(g => g.id === id)
+      return g ? { ...g, sort_order: idx } : null
+    })
+    .filter(Boolean) as typeof groups.value
+  
+  groups.value = reordered
+
   draggingId.value = null
   dragOverId.value = null
 
+  // Persistir no backend
   reorderGroups(boardId, newIds)
 }
 
 function onDragEnd() {
+  console.log('[Group Drag] Drag ended')
   draggingId.value = null
   dragOverId.value = null
 }
@@ -532,7 +636,8 @@ async function handleSameGroupReorder(groupId: string, targetTaskId: string) {
   
   const tasks = tasksByGroup.value[groupId]
   if (!tasks) {
-    console.log('[handleSameGroupReorder] No tasks found for group')
+    console.error('[handleSameGroupReorder] No tasks found for group')
+    alert('Erro: Nenhuma tarefa encontrada no grupo')
     return
   }
 
@@ -542,7 +647,8 @@ async function handleSameGroupReorder(groupId: string, targetTaskId: string) {
   console.log('[handleSameGroupReorder] Indices:', { fromIdx, toIdx })
 
   if (fromIdx === -1 || toIdx === -1) {
-    console.log('[handleSameGroupReorder] Invalid indices')
+    console.error('[handleSameGroupReorder] Invalid indices')
+    alert('Erro: Índices inválidos')
     return
   }
 
@@ -550,7 +656,8 @@ async function handleSameGroupReorder(groupId: string, targetTaskId: string) {
   const reordered = [...tasks]
   const [movedTask] = reordered.splice(fromIdx, 1)
   if (!movedTask) {
-    console.log('[handleSameGroupReorder] No task to move')
+    console.error('[handleSameGroupReorder] No task to move')
+    alert('Erro: Tarefa não encontrada')
     return
   }
   
@@ -566,13 +673,22 @@ async function handleSameGroupReorder(groupId: string, targetTaskId: string) {
   
   console.log('[handleSameGroupReorder] Calling backend with task IDs:', taskIds)
   
-  const success = await reorderTasks({ groupId, taskIds })
-  
-  console.log('[handleSameGroupReorder] Backend result:', success)
-  
-  if (!success) {
-    console.log('[handleSameGroupReorder] Rollback - refreshing tasks')
-    // Rollback em caso de erro
+  try {
+    const success = await reorderTasks({ groupId, taskIds })
+    
+    console.log('[handleSameGroupReorder] Backend result:', success)
+    
+    if (!success) {
+      console.error('[handleSameGroupReorder] Backend returned false - refreshing tasks')
+      alert('Erro ao reordenar tarefas. Verifique o console.')
+      // Rollback em caso de erro
+      await refreshGroupTasks(groupId, showArchived.value)
+    } else {
+      console.log('[handleSameGroupReorder] Success!')
+    }
+  } catch (error) {
+    console.error('[handleSameGroupReorder] Exception:', error)
+    alert('Erro ao reordenar tarefas: ' + (error as Error).message)
     await refreshGroupTasks(groupId, showArchived.value)
   }
 }
@@ -735,6 +851,21 @@ const creatingInGroup = ref<string | null>(null)
 const newTaskTitle = ref('')
 const { createTask } = useTasks()
 
+// Compartilhar grupo por e-mail
+const showShareGroupModal = ref(false)
+const selectedGroupId = ref<string | null>(null)
+const selectedMembers = ref<string[]>([])
+const shareMessage = ref('')
+const sharingGroup = ref(false)
+const shareError = ref('')
+const boardMembers = ref<Array<{
+  id: string
+  full_name: string | null
+  email: string
+  avatar_url: string | null
+}>>([])
+const boardMembersComposable = useBoardMembers()
+
 function openCreateTask(groupId: string) {
   newTaskTitle.value = ''
   creatingInGroup.value = groupId
@@ -772,6 +903,89 @@ function handleTaskDeleted(taskId: string) {
   }
 }
 
+async function openShareGroupModal(groupId: string) {
+  selectedGroupId.value = groupId
+  selectedMembers.value = []
+  shareMessage.value = ''
+  shareError.value = ''
+  sharingGroup.value = false
+  
+  // Fetch board members
+  await boardMembersComposable.fetchMembers(boardId)
+  boardMembers.value = boardMembersComposable.members.value.map(m => ({
+    id: m.user_id,
+    full_name: m.profile?.full_name || null,
+    email: m.profile?.email || '',
+    avatar_url: m.profile?.avatar_url || null
+  }))
+  
+  showShareGroupModal.value = true
+}
+
+async function handleShareGroup() {
+  if (!selectedGroupId.value || selectedMembers.value.length === 0) {
+    shareError.value = 'Selecione pelo menos um membro'
+    return
+  }
+
+  sharingGroup.value = true
+  shareError.value = ''
+
+  try {
+    const supabase = useNuxtApp().$supabase
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      shareError.value = 'Sessão expirada. Faça login novamente.'
+      sharingGroup.value = false
+      return
+    }
+
+    const response = await $fetch('/api/groups/share', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: {
+        groupId: selectedGroupId.value,
+        memberIds: selectedMembers.value,
+        message: shareMessage.value.trim() || undefined
+      }
+    })
+
+    if (response.success) {
+      showShareGroupModal.value = false
+      // Show success toast (you can add a toast notification system later)
+      console.log('[Share Group] Success:', response.message)
+    }
+  } catch (error: any) {
+    console.error('[Share Group] Error:', error)
+    console.error('[Share Group] Error details:', {
+      status: error.status,
+      statusCode: error.statusCode,
+      data: error.data,
+      message: error.message
+    })
+    
+    // Extrair mensagem de erro mais específica
+    let errorMessage = 'Erro ao compartilhar grupo. Tente novamente.'
+    
+    if (error.data?.message) {
+      errorMessage = error.data.message
+    } else if (error.statusCode === 500) {
+      errorMessage = 'Erro no servidor. Verifique a configuração do Supabase.'
+    } else if (error.statusCode === 403) {
+      errorMessage = 'Você não tem permissão para compartilhar este grupo.'
+    } else if (error.statusCode === 401) {
+      errorMessage = 'Sessão expirada. Faça login novamente.'
+    }
+    
+    shareError.value = errorMessage
+  } finally {
+    sharingGroup.value = false
+  }
+}
+
 async function load() {
   await fetchAll(showArchived.value)
 }
@@ -779,5 +993,13 @@ async function load() {
 onMounted(async () => {
   loadShowEmptyPref()
   await fetchAll(showArchived.value)
+  
+  // Check if there's a task query param to open automatically
+  if (route.query.task) {
+    const taskId = route.query.task as string
+    // TODO: Open task modal with taskId
+    // This will be implemented when TaskModal is integrated with the board page
+    console.log('[Board] Auto-opening task:', taskId)
+  }
 })
 </script>

@@ -76,6 +76,7 @@ export function useBoardData(boardId: string) {
    * Carrega todos os dados em paralelo (otimizado)
    */
   async function fetchAll(showArchived = false) {
+    console.log('[useBoardData] fetchAll chamado para boardId:', boardId, 'showArchived:', showArchived)
     loading.value = true
     error.value = null
 
@@ -83,19 +84,24 @@ export function useBoardData(boardId: string) {
       // Carregar do cache primeiro (stale-while-revalidate)
       const hasCache = loadFromCache()
       if (hasCache) {
+        console.log('[useBoardData] Dados carregados do cache')
         loading.value = false
         // Revalidar em background
         revalidateInBackground(showArchived)
         return
       }
 
+      console.log('[useBoardData] Cache não encontrado, carregando dados frescos')
       // Se não tem cache, carregar tudo em paralelo
       await loadFreshData(showArchived)
+      console.log('[useBoardData] Dados frescos carregados com sucesso')
     } catch (e: any) {
       error.value = e.message
-      console.error('Erro ao carregar board:', e)
+      console.error('[useBoardData] ERRO CRÍTICO ao carregar board:', e)
+      console.error('[useBoardData] Stack trace:', e.stack)
     } finally {
       loading.value = false
+      console.log('[useBoardData] fetchAll finalizado - loading:', loading.value, 'error:', error.value)
     }
   }
 
@@ -103,6 +109,9 @@ export function useBoardData(boardId: string) {
    * Carrega dados frescos do banco (usado quando não há cache)
    */
   async function loadFreshData(showArchived = false) {
+    console.log('[useBoardData] Iniciando loadFreshData para boardId:', boardId)
+    console.log('[useBoardData] User:', user.value?.id, 'isMaster:', isMaster.value)
+    
     // Executar TODAS as queries em paralelo
     const [boardResult, groupsResult, roleResult] = await Promise.all([
       // Query 1: Board
@@ -130,16 +139,32 @@ export function useBoardData(boardId: string) {
         : Promise.resolve({ data: null, error: null })
     ])
 
+    console.log('[useBoardData] Board result:', { data: boardResult.data, error: boardResult.error })
+    console.log('[useBoardData] Groups result:', { count: groupsResult.data?.length, error: groupsResult.error })
+    console.log('[useBoardData] Role result:', { data: roleResult.data, error: roleResult.error })
+
     // Processar resultados
-    if (boardResult.error) throw boardResult.error
-    if (groupsResult.error) throw groupsResult.error
+    if (boardResult.error) {
+      console.error('[useBoardData] Erro ao carregar board:', boardResult.error)
+      throw boardResult.error
+    }
+    if (groupsResult.error) {
+      console.error('[useBoardData] Erro ao carregar grupos:', groupsResult.error)
+      throw groupsResult.error
+    }
+    if (roleResult.error) {
+      console.error('[useBoardData] Erro ao carregar role (não crítico):', roleResult.error)
+    }
 
     board.value = boardResult.data
     groups.value = groupsResult.data || []
     accessRole.value = isMaster.value ? 'owner' : (roleResult.data?.access_role ?? null)
+    
+    console.log('[useBoardData] Dados carregados - Board:', board.value?.name, 'Groups:', groups.value.length, 'Role:', accessRole.value)
 
     // Query 4: Tarefas de TODOS os grupos em UMA ÚNICA query
     if (groups.value.length > 0) {
+      console.log('[useBoardData] Carregando tarefas para', groups.value.length, 'grupos')
       const groupIds = groups.value.map(g => g.id)
       
       const tasksQuery = supabase
@@ -156,6 +181,12 @@ export function useBoardData(boardId: string) {
 
       const { data: tasksData, error: tasksError } = await tasksQuery
 
+      console.log('[useBoardData] Tasks result:', { count: tasksData?.length, error: tasksError })
+
+      if (tasksError) {
+        console.error('[useBoardData] Erro ao carregar tarefas:', tasksError)
+      }
+
       if (!tasksError && tasksData) {
         // Agrupar tarefas por group_id
         const grouped: Record<string, TaskRow[]> = {}
@@ -168,7 +199,10 @@ export function useBoardData(boardId: string) {
         })
 
         tasksByGroup.value = grouped
+        console.log('[useBoardData] Tarefas agrupadas:', Object.keys(grouped).length, 'grupos com tarefas')
       }
+    } else {
+      console.log('[useBoardData] Nenhum grupo encontrado, pulando carregamento de tarefas')
     }
 
     // Salvar no cache

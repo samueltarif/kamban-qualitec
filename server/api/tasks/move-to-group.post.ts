@@ -96,27 +96,43 @@ export default defineEventHandler(async (event) => {
   // Check user permission on the board
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role_global')
     .eq('id', user.id)
     .single()
 
-  const isMaster = profile?.role === 'master'
+  const isMaster = profile?.role_global === 'master'
 
   if (!isMaster) {
-    const { data: member } = await supabase
+    // Check if user is board member with edit permissions
+    const { data: members, error: memberError } = await supabase
       .from('board_members')
       .select('access_role')
       .eq('board_id', boardId)
       .eq('user_id', user.id)
-      .single()
 
-    const canEdit = member?.access_role === 'owner' || member?.access_role === 'editor'
-    
-    if (!canEdit) {
-      throw createError({
-        statusCode: 403,
-        message: 'Insufficient permissions'
-      })
+    // If query fails or no member found, check if user is board creator
+    if (memberError || !members || members.length === 0) {
+      const { data: board } = await supabase
+        .from('boards')
+        .select('created_by')
+        .eq('id', boardId)
+        .single()
+
+      if (board?.created_by !== user.id) {
+        throw createError({
+          statusCode: 403,
+          message: 'Insufficient permissions'
+        })
+      }
+    } else {
+      const canEdit = members[0].access_role === 'owner' || members[0].access_role === 'editor'
+      
+      if (!canEdit) {
+        throw createError({
+          statusCode: 403,
+          message: 'Insufficient permissions'
+        })
+      }
     }
   }
 

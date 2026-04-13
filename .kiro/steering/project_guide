@@ -625,3 +625,67 @@ Componentes shadcn relevantes para este projeto:
 - [ ] Dropdowns não saem da viewport?
 - [ ] Texto legível sem zoom?
 - [ ] Scroll horizontal apenas onde intencional?
+
+
+---
+
+# 24) Regra de preservação de funcionalidades existentes
+
+**É PROIBIDO remover, desabilitar ou quebrar funcionalidades existentes para corrigir bugs ou implementar novas features.**
+
+Antes de qualquer alteração que possa impactar funcionalidades já implementadas, o agente DEVE:
+
+1. **Identificar o impacto**: Listar todas as funcionalidades que podem ser afetadas pela mudança
+2. **Avaliar alternativas**: Buscar soluções que não quebrem o que já funciona
+3. **AVISAR O USUÁRIO**: Se não houver alternativa, PARAR e explicar:
+   - Qual funcionalidade será afetada
+   - Por que é necessário modificá-la
+   - Qual será o impacto para o usuário
+   - Quais são as alternativas (se houver)
+4. **PEDIR AUTORIZAÇÃO EXPLÍCITA**: Aguardar confirmação do usuário antes de prosseguir
+
+## Exemplos de situações que exigem autorização:
+
+- Remover um componente que está sendo usado em outras telas
+- Alterar a assinatura de uma função que é chamada em múltiplos lugares
+- Modificar o comportamento de um composable que afeta várias features
+- Remover campos de um formulário ou tabela
+- Alterar rotas ou endpoints que podem quebrar integrações
+- Modificar estrutura de dados que pode afetar dados existentes
+- Desabilitar validações ou regras de negócio
+- Remover ou renomear props de componentes compartilhados
+
+## Abordagem correta:
+
+✅ Adicionar nova funcionalidade sem remover a antiga
+✅ Criar nova versão do componente mantendo a antiga
+✅ Adicionar flag de feature toggle para transição gradual
+✅ Deprecar gradualmente com avisos antes de remover
+✅ Criar migração de dados quando necessário
+✅ Manter retrocompatibilidade sempre que possível
+
+## Abordagem PROIBIDA:
+
+❌ Remover código "porque não está sendo usado" sem verificar
+❌ Alterar comportamento existente sem avisar
+❌ Quebrar funcionalidades para "simplificar" o código
+❌ Remover features "temporariamente" para corrigir bugs
+❌ Modificar contratos de API sem considerar impacto
+
+**Esta regra tem prioridade máxima. Preservar o que funciona é mais importante do que adicionar o que é novo.**
+
+---
+
+# Resumo das prioridades do projeto
+
+Em ordem de importância:
+
+1. **Preservação de funcionalidades existentes** (Regra 24)
+2. **Integridade dos dados e dos vínculos** (Regra 3)
+3. **Consistência de estado entre entidades** (Regra 16)
+4. **Segurança e proteção de rotas/RLS** (Sempre)
+5. **Compatibilidade com evolução futura** (Regra 17)
+6. **Arquitetura, organização e padrão de código** (Regras 1-23)
+7. **Preferências pontuais do desenvolvedor**
+
+Qualquer conflito entre regras deve seguir esta ordem de prioridade.

@@ -160,6 +160,9 @@ async function handleUpdate(subtaskId: string, title: string) {
 }
 
 async function handleUpdateField(subtaskId: string, field: string, value: unknown) {
+  console.log('[SubtasksTable] Updating field:', { subtaskId, field, value })
+  // Não precisa fazer nada aqui - o SubtaskRow já fez a atualização otimista
+  // Apenas salvar no servidor
   await updateSubtask(subtaskId, { [field]: value })
 }
 

@@ -147,6 +147,11 @@
     <template #footer>
       <div class="flex items-center justify-between w-full">
         <div class="flex items-center gap-2">
+          <TaskInviteButton 
+            v-if="canEditTasks" 
+            :task-id="taskId" 
+            :board-id="boardId" 
+          />
           <BaseButton 
             v-if="canEditTasks" 
             variant="ghost" 

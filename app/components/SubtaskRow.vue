@@ -49,7 +49,7 @@
               v-if="col.key === 'status'"
               :task-id="subtask.id"
               :board-id="boardId"
-              :status-id="subtask.status_id"
+              :status-id="localStatusId"
               @update:status-id="handleStatusUpdate"
             />
             
@@ -63,7 +63,7 @@
             <!-- Due Date Cell -->
             <DueDateCell
               v-else-if="col.key === 'dueDate'"
-              :due-date="subtask.due_date"
+              :due-date="localDueDate"
             />
             
             <!-- Priority Cell -->
@@ -71,7 +71,7 @@
               v-else-if="col.key === 'priority'"
               :task-id="subtask.id"
               :board-id="boardId"
-              :priority-id="subtask.priority_id"
+              :priority-id="localPriorityId"
               @update:priority-id="handlePriorityUpdate"
             />
             
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import type { Tables } from '#shared/types/database'
 import { useBoardColumns } from '~/composables/useBoardColumns'
 
@@ -140,6 +140,22 @@ const { orderedColumns, isVisible } = useBoardColumns(props.boardId)
 const isEditingTitle = ref(false)
 const localTitle = ref(props.subtask.title)
 const titleInputRef = ref<HTMLInputElement | null>(null)
+
+// Estados reativos locais para atualização otimista
+const localStatusId = ref(props.subtask.status_id)
+const localPriorityId = ref(props.subtask.priority_id)
+const localDueDate = ref(props.subtask.due_date)
+
+// Observar mudanças nas props para sincronizar
+watch(() => props.subtask.status_id, (newVal) => {
+  localStatusId.value = newVal
+})
+watch(() => props.subtask.priority_id, (newVal) => {
+  localPriorityId.value = newVal
+})
+watch(() => props.subtask.due_date, (newVal) => {
+  localDueDate.value = newVal
+})
 
 // Colunas que fazem sentido para subtarefas
 const subtaskColumns = ['assignee', 'status', 'dueDate', 'attachments', 'priority']
@@ -171,10 +187,16 @@ function cancelEdit() {
 }
 
 function handleStatusUpdate(statusId: string | null) {
+  // Atualização otimista local IMEDIATA
+  localStatusId.value = statusId
+  // Emitir para salvar no servidor em background
   emit('update-field', props.subtask.id, 'status_id', statusId)
 }
 
 function handlePriorityUpdate(priorityId: string | null) {
+  // Atualização otimista local IMEDIATA
+  localPriorityId.value = priorityId
+  // Emitir para salvar no servidor em background
   emit('update-field', props.subtask.id, 'priority_id', priorityId)
 }
 </script>
