@@ -342,116 +342,17 @@
     </div>
 
     <!-- Visualização vertical (Kanban) -->
-    <div v-else-if="viewMode === 'vertical'" class="flex-1 overflow-x-auto overflow-y-hidden">
-        <div class="flex gap-4 h-full pb-4">
-          <!-- Coluna para cada grupo -->
-          <div
-            v-for="group in visibleGroups"
-            :key="group.id"
-            class="flex-shrink-0 w-80 flex flex-col bg-neutral-50 rounded-xl border border-neutral-200"
-          >
-            <!-- Cabeçalho da coluna -->
-            <div
-              class="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0"
-              :style="`border-left: 4px solid ${group.color || '#6366f1'}`"
-            >
-              <span class="flex-1 text-heading-sm font-semibold text-neutral-900 truncate">
-                {{ group.name }}
-              </span>
-              <span class="text-label-xs text-muted bg-white px-2 py-0.5 rounded-full">
-                {{ tasksByGroup[group.id]?.length || 0 }}
-              </span>
-            </div>
-
-            <!-- Lista de cards -->
-            <div class="flex-1 overflow-y-auto p-3 space-y-2">
-              <div
-                v-for="task in tasksByGroup[group.id]"
-                :key="task.id"
-                class="bg-white rounded-lg p-3 border border-neutral-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                @click="openTaskModal(task.id)"
-              >
-                <h3 class="text-body-sm font-medium text-neutral-900 mb-2">{{ task.title }}</h3>
-                
-                <div class="flex items-center gap-2 text-label-xs text-muted flex-wrap">
-                  <!-- Status com cor real -->
-                  <div v-if="task.status_id" class="flex items-center gap-1">
-                    <div 
-                      class="w-2 h-2 rounded-full" 
-                      :style="{ backgroundColor: getStatusById(task.status_id)?.color || '#6366f1' }"
-                    />
-                    <span>{{ getStatusById(task.status_id)?.name || 'Status' }}</span>
-                  </div>
-                  
-                  <!-- Priority com cor real -->
-                  <div v-if="task.priority_id" class="flex items-center gap-1">
-                    <div
-                      class="w-2 h-2 rounded-full"
-                      :style="{ backgroundColor: getPriorityById(task.priority_id)?.color || '#6366f1' }"
-                    />
-                    <span>{{ getPriorityById(task.priority_id)?.name || 'Prioridade' }}</span>
-                  </div>
-                  
-                  <!-- Due date -->
-                  <div v-if="task.due_date" class="flex items-center gap-1">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>{{ formatDate(task.due_date) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Empty state -->
-              <div v-if="!(tasksByGroup[group.id]?.length)" class="text-center py-8">
-                <p class="text-label-sm text-muted italic">Nenhuma tarefa</p>
-              </div>
-            </div>
-
-            <!-- Botão adicionar tarefa -->
-            <div v-if="canEdit" class="border-t border-neutral-200 p-2 shrink-0">
-              <button
-                v-if="creatingInGroup !== group.id"
-                @click="openCreateTask(group.id)"
-                class="w-full flex items-center gap-2 px-3 py-2 text-label-sm text-muted hover:text-primary-600 hover:bg-white rounded-lg transition-colors"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Nova tarefa
-              </button>
-              
-              <!-- Input inline -->
-              <div v-else class="bg-white rounded-lg p-3 border border-primary-400 shadow-sm">
-                <input
-                  :ref="el => { if (el && creatingInGroup === group.id) (el as HTMLInputElement).focus() }"
-                  v-model="newTaskTitle"
-                  type="text"
-                  placeholder="Nome da tarefa..."
-                  maxlength="500"
-                  class="w-full text-body-sm text-neutral-800 bg-transparent outline-none placeholder:text-neutral-400"
-                  @keydown.enter="saveNewTask(group.id)"
-                  @keydown.esc="cancelCreateTask"
-                  @blur="cancelCreateTask"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- Botão adicionar coluna -->
-          <div v-if="canEdit" class="flex-shrink-0 w-80">
-            <button
-              @click="openAddGroup()"
-              class="w-full h-full min-h-[200px] flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 hover:border-primary-400 hover:bg-primary-50 text-muted hover:text-primary-600 transition-all"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span class="text-label-sm font-medium">Adicionar grupo</span>
-            </button>
-          </div>
-        </div>
-      </div>
+    <KanbanView
+      v-else-if="viewMode === 'vertical'"
+      :visible-groups="visibleGroups"
+      :tasks-by-group="tasksByGroup"
+      :statuses="statuses"
+      :priorities="priorities"
+      :can-edit="canEdit"
+      @open-task="openTaskModal"
+      @add-group="openAddGroup()"
+      @create-task="handleCreateTaskFromKanban"
+    />
 
     <!-- Modal novo grupo -->
     <BaseModal v-model="showAddGroupModal" title="Novo grupo" size="sm">
@@ -1107,6 +1008,16 @@ async function saveNewTask(groupId: string) {
   creatingInGroup.value = null
   newTaskTitle.value = ''
   if (!title) return
+  try {
+    const task = await createTask({ boardId, groupId, title })
+    if (task) {
+      // Atualizar tarefas do grupo
+      await refreshGroupTasks(groupId, showArchived.value)
+    }
+  } catch { /* silently fail */ }
+}
+
+async function handleCreateTaskFromKanban({ groupId, title }: { groupId: string; title: string }) {
   try {
     const task = await createTask({ boardId, groupId, title })
     if (task) {
