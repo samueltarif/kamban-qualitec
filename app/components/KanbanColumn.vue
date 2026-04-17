@@ -1,16 +1,40 @@
 <template>
   <div 
-    class="flex-shrink-0 w-80 flex flex-col bg-neutral-50 rounded-xl border border-neutral-200 transition-colors"
-    :class="{ 'border-primary-400 bg-primary-50': isDragOver }"
+    class="flex flex-col bg-neutral-50 rounded-xl border border-neutral-200 transition-all min-h-[300px]"
+    :class="{ 
+      'border-primary-400 bg-primary-50': isDragOver,
+      'opacity-50 scale-95': draggingColumnId === group.id,
+      'ring-2 ring-primary-400': isDragOverColumn
+    }"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
     <!-- Cabeçalho da coluna -->
     <div
-      class="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0"
+      class="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0 cursor-move"
       :style="`border-left: 4px solid ${group.color || '#6366f1'}`"
+      draggable="true"
+      @dragstart="handleColumnDragStart"
+      @dragend="handleColumnDragEnd"
+      @dragover.prevent="handleColumnDragOver"
+      @drop.stop="handleColumnDrop"
     >
+      <!-- Drag handle icon -->
+      <svg 
+        v-if="canEdit"
+        class="w-4 h-4 text-neutral-400 hover:text-neutral-600 flex-shrink-0" 
+        fill="currentColor" 
+        viewBox="0 0 16 16"
+      >
+        <circle cx="4" cy="3" r="1.5" />
+        <circle cx="4" cy="8" r="1.5" />
+        <circle cx="4" cy="13" r="1.5" />
+        <circle cx="12" cy="3" r="1.5" />
+        <circle cx="12" cy="8" r="1.5" />
+        <circle cx="12" cy="13" r="1.5" />
+      </svg>
+      
       <span class="flex-1 text-heading-sm font-semibold text-neutral-900 truncate">
         {{ group.name }}
       </span>
@@ -101,6 +125,8 @@ const props = defineProps<{
   isCreating: boolean
   newTaskTitle: string
   draggingTaskId: string | null
+  draggingColumnId?: string | null
+  isDragOverColumn?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -115,6 +141,10 @@ const emit = defineEmits<{
   (e: 'touch-drag-start', data: { taskId: string; x: number; y: number }): void
   (e: 'touch-drag-move', data: { x: number; y: number }): void
   (e: 'touch-drag-end'): void
+  (e: 'column-drag-start'): void
+  (e: 'column-drag-end'): void
+  (e: 'column-drag-over'): void
+  (e: 'column-drop'): void
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -173,5 +203,37 @@ function handleDrop(e: DragEvent) {
   if (props.draggingTaskId) {
     emit('drop', props.group.id)
   }
+}
+
+// Column drag handlers
+function handleColumnDragStart(e: DragEvent) {
+  if (!props.canEdit) {
+    e.preventDefault()
+    return
+  }
+  
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', props.group.id)
+  }
+  emit('column-drag-start')
+}
+
+function handleColumnDragEnd() {
+  emit('column-drag-end')
+}
+
+function handleColumnDragOver(e: DragEvent) {
+  if (!props.draggingColumnId) return
+  e.preventDefault()
+  e.stopPropagation()
+  emit('column-drag-over')
+}
+
+function handleColumnDrop(e: DragEvent) {
+  if (!props.draggingColumnId) return
+  e.preventDefault()
+  e.stopPropagation()
+  emit('column-drop')
 }
 </script>

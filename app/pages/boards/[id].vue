@@ -353,6 +353,7 @@
       @add-group="openAddGroup()"
       @create-task="handleCreateTaskFromKanban"
       @move-task="handleMoveTaskInKanban"
+      @reorder-groups="handleReorderGroupsInKanban"
     />
 
     <!-- Modal novo grupo -->
@@ -1038,6 +1039,39 @@ async function handleMoveTaskInKanban({ taskId, sourceGroupId, targetGroupId }: 
   
   // Usar a função existente de cross-group move
   await handleCrossGroupMove(task, sourceGroupId, targetGroupId)
+}
+
+async function handleReorderGroupsInKanban({ fromGroupId, toGroupId }: { fromGroupId: string; toGroupId: string }) {
+  console.log('[handleReorderGroupsInKanban] Reordering groups:', { fromGroupId, toGroupId })
+  
+  const groupIds = groups.value.map(g => g.id)
+  const fromIdx = groupIds.indexOf(fromGroupId)
+  const toIdx = groupIds.indexOf(toGroupId)
+  
+  if (fromIdx === -1 || toIdx === -1) {
+    console.error('[handleReorderGroupsInKanban] Invalid group indices')
+    return
+  }
+  
+  // Reordenar array localmente (optimistic update)
+  const newIds = [...groupIds]
+  newIds.splice(fromIdx, 1)
+  newIds.splice(toIdx, 0, fromGroupId)
+  
+  console.log('[handleReorderGroupsInKanban] New order:', newIds)
+  
+  // Atualizar o array local imediatamente
+  const reordered = newIds
+    .map((id, idx) => {
+      const g = groups.value.find(g => g.id === id)
+      return g ? { ...g, sort_order: idx } : null
+    })
+    .filter(Boolean) as typeof groups.value
+  
+  groups.value = reordered
+  
+  // Persistir no backend
+  await reorderGroups(boardId, newIds)
 }
 
 function handleTaskDeleted(taskId: string) {

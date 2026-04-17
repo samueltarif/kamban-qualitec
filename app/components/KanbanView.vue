@@ -1,9 +1,10 @@
 <template>
-  <div class="flex-1 overflow-x-auto overflow-y-hidden">
-    <div class="flex gap-4 h-full pb-4">
+  <div class="flex-1 overflow-y-auto p-4">
+    <!-- Grid 2 colunas em desktop, 1 coluna em mobile -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 auto-rows-min">
       <!-- Coluna para cada grupo -->
       <KanbanColumn
-        v-for="group in visibleGroups"
+        v-for="(group, index) in visibleGroups"
         :key="group.id"
         :ref="el => setColumnRef(group.id, el)"
         :group="group"
@@ -14,6 +15,8 @@
         :is-creating="creatingInGroup === group.id"
         :new-task-title="newTaskTitle"
         :dragging-task-id="draggingTaskId"
+        :dragging-column-id="draggingColumnId"
+        :is-drag-over="dragOverColumnId === group.id"
         @open-task="$emit('open-task', $event)"
         @start-create="handleStartCreate(group.id)"
         @save="handleSaveTask(group.id)"
@@ -25,10 +28,14 @@
         @touch-drag-start="handleTouchDragStart"
         @touch-drag-move="handleTouchDragMove"
         @touch-drag-end="handleTouchDragEnd"
+        @column-drag-start="handleColumnDragStart(group.id)"
+        @column-drag-end="handleColumnDragEnd"
+        @column-drag-over="handleColumnDragOver(group.id)"
+        @column-drop="handleColumnDrop(group.id)"
       />
 
       <!-- Botão adicionar coluna -->
-      <div v-if="canEdit" class="flex-shrink-0 w-80">
+      <div v-if="canEdit" class="min-h-[200px]">
         <button
           @click="$emit('add-group')"
           class="w-full h-full min-h-[200px] flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 hover:border-primary-400 hover:bg-primary-50 text-muted hover:text-primary-600 transition-all"
@@ -78,12 +85,17 @@ const emit = defineEmits<{
   (e: 'add-group'): void
   (e: 'create-task', data: { groupId: string; title: string }): void
   (e: 'move-task', data: { taskId: string; sourceGroupId: string; targetGroupId: string }): void
+  (e: 'reorder-groups', data: { fromGroupId: string; toGroupId: string }): void
 }>()
 
 const creatingInGroup = ref<string | null>(null)
 const newTaskTitle = ref('')
 const draggingTaskId = ref<string | null>(null)
 const sourceGroupId = ref<string | null>(null)
+
+// Column drag state
+const draggingColumnId = ref<string | null>(null)
+const dragOverColumnId = ref<string | null>(null)
 
 // Touch drag state
 const touchDraggingTaskId = ref<string | null>(null)
@@ -223,5 +235,34 @@ function resetTouchDrag() {
   touchDragTargetGroupId.value = null
   draggingTaskId.value = null
   sourceGroupId.value = null
+}
+
+// Column drag and drop handlers
+function handleColumnDragStart(groupId: string) {
+  draggingColumnId.value = groupId
+}
+
+function handleColumnDragEnd() {
+  draggingColumnId.value = null
+  dragOverColumnId.value = null
+}
+
+function handleColumnDragOver(groupId: string) {
+  if (!draggingColumnId.value || draggingColumnId.value === groupId) return
+  dragOverColumnId.value = groupId
+}
+
+function handleColumnDrop(targetGroupId: string) {
+  if (!draggingColumnId.value || draggingColumnId.value === targetGroupId) {
+    handleColumnDragEnd()
+    return
+  }
+  
+  emit('reorder-groups', {
+    fromGroupId: draggingColumnId.value,
+    toGroupId: targetGroupId
+  })
+  
+  handleColumnDragEnd()
 }
 </script>
