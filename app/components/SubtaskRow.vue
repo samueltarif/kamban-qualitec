@@ -68,7 +68,7 @@
       <!-- Colunas dinâmicas usando os mesmos componentes das tarefas -->
       <template v-for="col in orderedColumns" :key="col.key">
         <template v-if="isVisible(col.key) && isSubtaskColumn(col.key)">
-          <div class="flex-shrink-0 snap-start" @click.stop>
+          <div class="flex-shrink-0 snap-start" :style="getColumnStyle(col.key)" @click.stop>
             <!-- Status Cell -->
             <StatusCell
               v-if="col.key === 'status'"
@@ -149,6 +149,7 @@
 import { ref, nextTick, watch } from 'vue'
 import type { Tables } from '#shared/types/database'
 import { useBoardColumns } from '~/composables/useBoardColumns'
+import { useColumnResize } from '~/composables/useColumnResize'
 
 const props = defineProps<{
   subtask: Tables<'subtasks'>
@@ -167,6 +168,12 @@ const emit = defineEmits<{
 }>()
 
 const { orderedColumns, isVisible } = useBoardColumns(props.boardId)
+const { getColumnStyle: getColStyle } = useColumnResize(props.boardId)
+
+// Função helper para obter o estilo
+function getColumnStyle(key: string) {
+  return getColStyle(key).value
+}
 
 const isEditingTitle = ref(false)
 const localTitle = ref(props.subtask.title)

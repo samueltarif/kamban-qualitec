@@ -2,6 +2,9 @@
   <div v-if="isExpanded" class="bg-blue-50/20 border-l-4 border-primary-400">
     <!-- Cabeçalho de subtarefas alinhado com as colunas -->
     <div class="flex items-center gap-2 px-4 py-2 bg-neutral-50/80 border-b border-neutral-200 overflow-x-auto scrollbar-mobile">
+      <!-- Drag handle header -->
+      <div class="flex-shrink-0 w-4" />
+      
       <!-- Checkbox header -->
       <div class="flex-shrink-0 w-4" />
       
@@ -13,7 +16,7 @@
       <!-- Headers dinâmicos baseados nas colunas visíveis -->
       <template v-for="col in orderedColumns" :key="col.key">
         <template v-if="isVisible(col.key) && isSubtaskColumn(col.key)">
-          <div class="flex-shrink-0 min-w-[120px] text-xs font-semibold text-neutral-600 uppercase tracking-wide">
+          <div class="flex-shrink-0 text-xs font-semibold text-neutral-600 uppercase tracking-wide" :style="getColumnStyle(col.key)">
             {{ getColumnLabel(col.key) }}
           </div>
         </template>
@@ -79,6 +82,7 @@
 import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { useSubtasks } from '~/composables/useSubtasks'
 import { useBoardColumns } from '~/composables/useBoardColumns'
+import { useColumnResize } from '~/composables/useColumnResize'
 import { useTaskStatuses } from '~/composables/useTaskStatuses'
 import { useTaskPriorities } from '~/composables/useTaskPriorities'
 import SubtaskRow from '~/components/SubtaskRow.vue'
@@ -95,6 +99,7 @@ const emit = defineEmits<{
 }>()
 
 const { orderedColumns, isVisible } = useBoardColumns(props.boardId)
+const { getColumnStyle: getColStyle } = useColumnResize(props.boardId)
 const { statuses, fetchStatuses } = useTaskStatuses(props.boardId)
 const { priorities, fetchPriorities } = useTaskPriorities(props.boardId)
 const {
@@ -107,6 +112,11 @@ const {
   updateSubtask,
   deleteSubtask,
 } = useSubtasks(props.taskId)
+
+// Função helper para obter o estilo
+function getColumnStyle(key: string) {
+  return getColStyle(key).value
+}
 
 const isCreating = ref(false)
 const newSubtaskTitle = ref('')
