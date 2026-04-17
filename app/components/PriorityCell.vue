@@ -56,9 +56,9 @@
               Sem prioridade
             </button>
 
-            <!-- Prioridades disponíveis -->
+            <!-- Prioridades disponíveis (usando orderedPriorities para refletir reordenação) -->
             <button
-              v-for="priority in priorities"
+              v-for="priority in orderedPriorities"
               :key="priority.id"
               type="button"
               class="w-full px-4 py-3 rounded-lg text-sm font-medium text-white text-center transition-all hover:opacity-90 mb-2"
@@ -69,7 +69,7 @@
             </button>
 
             <!-- Estado vazio -->
-            <div v-if="priorities.length === 0 && !loading" class="px-4 py-6 text-center">
+            <div v-if="orderedPriorities.length === 0 && !loading" class="px-4 py-6 text-center">
               <p class="text-sm text-neutral-400">Nenhuma prioridade configurada</p>
             </div>
           </div>
@@ -204,7 +204,12 @@ import { useTaskPriorities } from '~/composables/useTaskPriorities'
 import { useBoardPermissions } from '~/composables/useBoardPermissions'
 import { getIconForPriority } from '~/utils/statusIcons'
 
-const props = defineProps<{ taskId: string; boardId: string; priorityId: string | null }>()
+const props = defineProps<{ 
+  taskId: string
+  boardId: string
+  priorityId: string | null
+  isSubtask?: boolean
+}>()
 const emit = defineEmits<{ (e: 'update:priorityId', value: string | null): void }>()
 
 const { priorities, loading, fetchPriorities, updateTaskPriority, createPriority, updatePriority, reorderPriorities } = useTaskPriorities(props.boardId)
@@ -258,20 +263,36 @@ function calcPosition() {
       maxHeight: '90vh',
     }
   } else {
-    // Desktop: posicionar perto do botão
+    // Desktop: posicionar perto do botão com altura máxima
     const rect = rootRef.value.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - rect.bottom
+    const viewportHeight = window.innerHeight
+    const spaceBelow = viewportHeight - rect.bottom
+    const spaceAbove = rect.top
     const spaceRight = window.innerWidth - rect.left
 
-    const dropdownHeight = 400
     const dropdownWidth = 600
+    const maxDropdownHeight = Math.min(600, viewportHeight - 32) // Máximo 600px ou altura da tela - 32px de margem
 
-    const top = spaceBelow > dropdownHeight ? rect.bottom + 4 : rect.top - dropdownHeight - 4
+    // Decidir se abre para baixo ou para cima
+    let top: number
+    let maxHeight: number
+    
+    if (spaceBelow > 400 || spaceBelow > spaceAbove) {
+      // Abrir para baixo
+      top = rect.bottom + 4
+      maxHeight = Math.min(maxDropdownHeight, spaceBelow - 16)
+    } else {
+      // Abrir para cima
+      maxHeight = Math.min(maxDropdownHeight, spaceAbove - 16)
+      top = rect.top - maxHeight - 4
+    }
+
     const left = spaceRight >= dropdownWidth ? rect.left : rect.right - dropdownWidth
 
     dropdownStyle.value = {
       top: `${Math.max(8, top)}px`,
       left: `${Math.max(8, left)}px`,
+      maxHeight: `${maxHeight}px`,
     }
   }
 }
@@ -302,9 +323,18 @@ async function select(priorityId: string | null) {
   if (!canEditTasks.value) return
   open.value = false
   if (priorityId === props.priorityId) return
+  
+  // Emit primeiro para atualização otimista
+  emit('update:priorityId', priorityId)
+  
+  // Se for subtask, não salvar aqui - deixar o componente pai fazer
+  if (props.isSubtask) {
+    return
+  }
+  
+  // Para tasks normais, salvar no banco
   try {
     await updateTaskPriority(props.taskId, priorityId)
-    emit('update:priorityId', priorityId)
   } catch { /* silently fail */ }
 }
 
@@ -349,6 +379,8 @@ async function createNewPriority() {
   
   const created = await createPriority(newPriorityName.value, newPriorityColor.value)
   if (created) {
+    // Adicionar a nova prioridade ao priorityOrder para aparecer imediatamente
+    priorityOrder.value.push(created.id)
     newPriorityName.value = ''
     newPriorityColor.value = '#3b82f6'
   }

@@ -68,13 +68,14 @@
       <!-- Colunas dinâmicas usando os mesmos componentes das tarefas -->
       <template v-for="col in orderedColumns" :key="col.key">
         <template v-if="isVisible(col.key) && isSubtaskColumn(col.key)">
-          <div class="flex-shrink-0 snap-start">
+          <div class="flex-shrink-0 snap-start" @click.stop>
             <!-- Status Cell -->
             <StatusCell
               v-if="col.key === 'status'"
               :task-id="subtask.id"
               :board-id="boardId"
               :status-id="localStatusId"
+              :is-subtask="true"
               @update:status-id="handleStatusUpdate"
             />
             
@@ -99,6 +100,7 @@
               :task-id="subtask.id"
               :board-id="boardId"
               :priority-id="localPriorityId"
+              :is-subtask="true"
               @update:priority-id="handlePriorityUpdate"
             />
             
@@ -106,6 +108,7 @@
             <AttachmentsCell
               v-else-if="col.key === 'attachments'"
               :task-id="subtask.id"
+              :is-subtask="true"
             />
           </div>
         </template>

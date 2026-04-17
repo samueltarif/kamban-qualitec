@@ -27,7 +27,7 @@ export interface UploadProgress {
   error?: string
 }
 
-export function useTaskAttachments(taskId: string) {
+export function useTaskAttachments(taskId: string, isSubtask: boolean = false) {
   const supabase = useNuxtApp().$supabase as any
   const attachments = ref<TaskAttachment[]>([])
   const count = ref<number>(0)
@@ -35,13 +35,16 @@ export function useTaskAttachments(taskId: string) {
   const uploading = ref(false)
   const uploadProgress = ref<UploadProgress[]>([])
 
+  const tableName = isSubtask ? 'subtask_attachments' : 'task_attachments'
+  const idColumn = isSubtask ? 'subtask_id' : 'task_id'
+
   async function fetchCount() {
     loading.value = true
     try {
       const { count: total, error } = await supabase
-        .from('task_attachments')
+        .from(tableName)
         .select('id', { count: 'exact', head: true })
-        .eq('task_id', taskId)
+        .eq(idColumn, taskId)
 
       if (!error) count.value = total ?? 0
     } catch {
@@ -55,7 +58,7 @@ export function useTaskAttachments(taskId: string) {
     loading.value = true
     try {
       const { data, error } = await supabase
-        .from('task_attachments')
+        .from(tableName)
         .select(`
           *,
           uploader:uploaded_by (
@@ -65,7 +68,7 @@ export function useTaskAttachments(taskId: string) {
             avatar_url
           )
         `)
-        .eq('task_id', taskId)
+        .eq(idColumn, taskId)
         .order('category', { ascending: true, nullsFirst: false })
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
@@ -127,18 +130,20 @@ export function useTaskAttachments(taskId: string) {
       progressItem.progress = 100
 
       // Registrar no banco de dados
+      const insertData: any = {
+        [idColumn]: taskId,
+        file_name: file.name,
+        file_path: filePath,
+        mime_type: file.type || null,
+        size_bytes: file.size,
+        category: category || null,
+        description: description || null,
+        sort_order: attachments.value.length
+      }
+
       const { data, error: dbError } = await supabase
-        .from('task_attachments')
-        .insert({
-          task_id: taskId,
-          file_name: file.name,
-          file_path: filePath,
-          mime_type: file.type || null,
-          size_bytes: file.size,
-          category: category || null,
-          description: description || null,
-          sort_order: attachments.value.length
-        })
+        .from(tableName)
+        .insert(insertData)
         .select(`
           *,
           uploader:uploaded_by (
@@ -200,7 +205,7 @@ export function useTaskAttachments(taskId: string) {
 
       // Deletar do banco
       const { error: dbError } = await supabase
-        .from('task_attachments')
+        .from(tableName)
         .delete()
         .eq('id', attachmentId)
 
@@ -244,7 +249,7 @@ export function useTaskAttachments(taskId: string) {
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('task_attachments')
+        .from(tableName)
         .update(updates)
         .eq('id', attachmentId)
 
@@ -283,7 +288,7 @@ export function useTaskAttachments(taskId: string) {
       // Atualizar no banco em paralelo
       const updatePromises = updates.map(update =>
         supabase
-          .from('task_attachments')
+          .from(tableName)
           .update({ sort_order: update.sort_order })
           .eq('id', update.id)
       )

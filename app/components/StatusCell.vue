@@ -204,7 +204,12 @@ import { useTaskStatuses } from '~/composables/useTaskStatuses'
 import { useBoardPermissions } from '~/composables/useBoardPermissions'
 import { getIconForStatus } from '~/utils/statusIcons'
 
-const props = defineProps<{ taskId: string; boardId: string; statusId: string | null }>()
+const props = defineProps<{ 
+  taskId: string
+  boardId: string
+  statusId: string | null
+  isSubtask?: boolean
+}>()
 const emit = defineEmits<{ (e: 'update:statusId', value: string | null): void }>()
 
 const { statuses, loading, fetchStatuses, updateTaskStatus, createStatus, updateStatus, reorderStatuses } = useTaskStatuses(props.boardId)
@@ -258,20 +263,36 @@ function calcPosition() {
       maxHeight: '90vh',
     }
   } else {
-    // Desktop: posicionar perto do botão
+    // Desktop: posicionar perto do botão com altura máxima
     const rect = rootRef.value.getBoundingClientRect()
-    const spaceBelow = window.innerHeight - rect.bottom
+    const viewportHeight = window.innerHeight
+    const spaceBelow = viewportHeight - rect.bottom
+    const spaceAbove = rect.top
     const spaceRight = window.innerWidth - rect.left
 
-    const dropdownHeight = 400
     const dropdownWidth = 600
+    const maxDropdownHeight = Math.min(600, viewportHeight - 32) // Máximo 600px ou altura da tela - 32px de margem
 
-    const top = spaceBelow > dropdownHeight ? rect.bottom + 4 : rect.top - dropdownHeight - 4
+    // Decidir se abre para baixo ou para cima
+    let top: number
+    let maxHeight: number
+    
+    if (spaceBelow > 400 || spaceBelow > spaceAbove) {
+      // Abrir para baixo
+      top = rect.bottom + 4
+      maxHeight = Math.min(maxDropdownHeight, spaceBelow - 16)
+    } else {
+      // Abrir para cima
+      maxHeight = Math.min(maxDropdownHeight, spaceAbove - 16)
+      top = rect.top - maxHeight - 4
+    }
+
     const left = spaceRight >= dropdownWidth ? rect.left : rect.right - dropdownWidth
 
     dropdownStyle.value = {
       top: `${Math.max(8, top)}px`,
       left: `${Math.max(8, left)}px`,
+      maxHeight: `${maxHeight}px`,
     }
   }
 }
@@ -302,9 +323,18 @@ async function select(statusId: string | null) {
   if (!canEditTasks.value) return
   open.value = false
   if (statusId === props.statusId) return
+  
+  // Emit primeiro para atualização otimista
+  emit('update:statusId', statusId)
+  
+  // Se for subtask, não salvar aqui - deixar o componente pai fazer
+  if (props.isSubtask) {
+    return
+  }
+  
+  // Para tasks normais, salvar no banco
   try {
     await updateTaskStatus(props.taskId, statusId)
-    emit('update:statusId', statusId)
   } catch { /* silently fail */ }
 }
 
@@ -349,6 +379,8 @@ async function createNewStatus() {
   
   const created = await createStatus(newStatusName.value, newStatusColor.value)
   if (created) {
+    // Adicionar o novo status ao statusOrder para aparecer imediatamente
+    statusOrder.value.push(created.id)
     newStatusName.value = ''
     newStatusColor.value = '#3b82f6'
   }
