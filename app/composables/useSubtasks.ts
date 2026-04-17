@@ -3,6 +3,25 @@ import type { Tables } from '~/shared/types/database'
 
 type Subtask = Tables<'subtasks'>
 
+// Cache global para evitar múltiplas requisições simultâneas para a mesma task
+const globalFetchCache = new Map<string, {
+  promise: Promise<void>
+  timestamp: number
+  data: Subtask[]
+}>()
+
+// Limpar cache antigo a cada 30 segundos
+if (import.meta.client) {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, value] of globalFetchCache.entries()) {
+      if (now - value.timestamp > 30000) {
+        globalFetchCache.delete(key)
+      }
+    }
+  }, 30000)
+}
+
 export function useSubtasks(taskId: string) {
   const supabase = useNuxtApp().$supabase as any
   
@@ -10,20 +29,28 @@ export function useSubtasks(taskId: string) {
   const loading = ref(false)
   const creating = ref(false)
   const error = ref<string | null>(null)
-  
-  // Flag para evitar chamadas simultâneas
-  let fetchPromise: Promise<void> | null = null
 
   async function fetchSubtasks() {
-    // Se já está carregando, retorna a promise existente
-    if (fetchPromise) {
-      return fetchPromise
+    // Verificar se já existe uma requisição em andamento no cache global
+    const cached = globalFetchCache.get(taskId)
+    if (cached) {
+      // Se a requisição ainda está em andamento, aguardar
+      if (cached.promise) {
+        await cached.promise
+        subtasks.value = cached.data
+        return
+      }
+      // Se os dados são recentes (menos de 5 segundos), usar do cache
+      if (Date.now() - cached.timestamp < 5000) {
+        subtasks.value = cached.data
+        return
+      }
     }
     
     loading.value = true
     error.value = null
     
-    fetchPromise = (async () => {
+    const fetchPromise = (async () => {
       try {
         const { data, error: fetchError } = await supabase
           .from('subtasks')
@@ -57,17 +84,32 @@ export function useSubtasks(taskId: string) {
         })
         
         subtasks.value = processedSubtasks
+        
+        // Atualizar cache global
+        globalFetchCache.set(taskId, {
+          promise: null as any,
+          timestamp: Date.now(),
+          data: processedSubtasks
+        })
       } catch (err: any) {
         console.error('Erro ao buscar subtarefas:', err)
         error.value = err.message
         subtasks.value = []
+        // Remover do cache em caso de erro
+        globalFetchCache.delete(taskId)
       } finally {
         loading.value = false
-        fetchPromise = null
       }
     })()
     
-    return fetchPromise
+    // Armazenar promise no cache enquanto está em andamento
+    globalFetchCache.set(taskId, {
+      promise: fetchPromise,
+      timestamp: Date.now(),
+      data: []
+    })
+    
+    await fetchPromise
   }
 
   async function createSubtask(title: string) {

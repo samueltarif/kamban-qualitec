@@ -274,13 +274,13 @@ const rowScrollRef = ref<HTMLElement | null>(null)
 
 const { subtasks, fetchSubtasks } = useSubtasks(props.task.id)
 
+// Verificar se tem subtarefas apenas após carregar
 const hasSubtasks = computed(() => subtasks.value.length > 0)
 
 async function toggleExpand() {
   isExpanded.value = !isExpanded.value
-  // Sempre carregar subtarefas ao expandir, mesmo que não tenha nenhuma
-  // Isso permite criar a primeira subtarefa
-  if (isExpanded.value) {
+  // Carregar subtarefas apenas ao expandir pela primeira vez
+  if (isExpanded.value && subtasks.value.length === 0) {
     await fetchSubtasks()
   }
 }
@@ -341,9 +341,9 @@ const currentBudget     = ref<number | null>(props.task.budget ?? null)
 const currentStartDate  = ref<string | null>(props.task.start_date ?? null)
 const currentEndDate    = ref<string | null>(props.task.due_date ?? null)
 
-// Carregar subtarefas ao montar para saber se tem
-onMounted(async () => {
-  await fetchSubtasks()
+// Não carregar subtarefas automaticamente no mount para evitar múltiplas requisições simultâneas
+// Elas serão carregadas apenas quando o usuário expandir
+onMounted(() => {
   // Restaurar posição de scroll
   if (rowScrollRef.value) {
     rowScrollRef.value.scrollLeft = getScrollPosition()
