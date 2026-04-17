@@ -12,35 +12,52 @@
   >
     <!-- Cabeçalho da coluna -->
     <div
-      class="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0 cursor-move"
+      class="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0 group/header"
       :style="`border-left: 4px solid ${group.color || '#6366f1'}`"
-      draggable="true"
-      @dragstart="handleColumnDragStart"
-      @dragend="handleColumnDragEnd"
-      @dragover.prevent="handleColumnDragOver"
-      @drop.stop="handleColumnDrop"
     >
       <!-- Drag handle icon -->
-      <svg 
+      <div
         v-if="canEdit"
-        class="w-4 h-4 text-neutral-400 hover:text-neutral-600 flex-shrink-0" 
-        fill="currentColor" 
-        viewBox="0 0 16 16"
+        class="flex-shrink-0 cursor-move"
+        draggable="true"
+        @dragstart="handleColumnDragStart"
+        @dragend="handleColumnDragEnd"
+        @dragover.prevent="handleColumnDragOver"
+        @drop.stop="handleColumnDrop"
       >
-        <circle cx="4" cy="3" r="1.5" />
-        <circle cx="4" cy="8" r="1.5" />
-        <circle cx="4" cy="13" r="1.5" />
-        <circle cx="12" cy="3" r="1.5" />
-        <circle cx="12" cy="8" r="1.5" />
-        <circle cx="12" cy="13" r="1.5" />
-      </svg>
+        <svg 
+          class="w-4 h-4 text-neutral-400 hover:text-neutral-600" 
+          fill="currentColor" 
+          viewBox="0 0 16 16"
+        >
+          <circle cx="4" cy="3" r="1.5" />
+          <circle cx="4" cy="8" r="1.5" />
+          <circle cx="4" cy="13" r="1.5" />
+          <circle cx="12" cy="3" r="1.5" />
+          <circle cx="12" cy="8" r="1.5" />
+          <circle cx="12" cy="13" r="1.5" />
+        </svg>
+      </div>
       
       <span class="flex-1 text-heading-sm font-semibold text-neutral-900 truncate">
         {{ group.name }}
       </span>
+      
       <span class="text-label-xs text-muted bg-white px-2 py-0.5 rounded-full">
         {{ tasks.length }}
       </span>
+      
+      <!-- Botão compartilhar (visível no hover) -->
+      <button
+        v-if="canEdit"
+        @click.stop="$emit('share-group', group.id)"
+        class="p-1.5 text-neutral-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors opacity-0 group-hover/header:opacity-100"
+        title="Compartilhar grupo por e-mail"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </button>
     </div>
 
     <!-- Lista de cards -->
@@ -145,6 +162,7 @@ const emit = defineEmits<{
   (e: 'column-drag-end'): void
   (e: 'column-drag-over'): void
   (e: 'column-drop'): void
+  (e: 'share-group', groupId: string): void
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)

@@ -354,6 +354,7 @@
       @create-task="handleCreateTaskFromKanban"
       @move-task="handleMoveTaskInKanban"
       @reorder-groups="handleReorderGroupsInKanban"
+      @share-group="openShareGroupModal"
     />
 
     <!-- Modal novo grupo -->

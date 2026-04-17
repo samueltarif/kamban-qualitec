@@ -32,6 +32,7 @@
         @column-drag-end="handleColumnDragEnd"
         @column-drag-over="handleColumnDragOver(group.id)"
         @column-drop="handleColumnDrop(group.id)"
+        @share-group="$emit('share-group', $event)"
       />
 
       <!-- Botão adicionar coluna -->
@@ -86,6 +87,7 @@ const emit = defineEmits<{
   (e: 'create-task', data: { groupId: string; title: string }): void
   (e: 'move-task', data: { taskId: string; sourceGroupId: string; targetGroupId: string }): void
   (e: 'reorder-groups', data: { fromGroupId: string; toGroupId: string }): void
+  (e: 'share-group', groupId: string): void
 }>()
 
 const creatingInGroup = ref<string | null>(null)
