@@ -1,12 +1,12 @@
 <template>
   <div>
     <!-- Linha principal da tarefa -->
-    <div class="border-b border-neutral-100 hover:bg-neutral-50 relative motion-interactive pointer-events-none">
+    <div class="border-b border-neutral-100 hover:bg-neutral-50 relative motion-interactive">
       
       <!-- Layout mobile: coluna fixa + área rolável -->
-      <div class="flex lg:hidden pointer-events-auto">
+      <div class="flex lg:hidden">
         <!-- Área fixa à esquerda (seta + título) -->
-        <div class="flex-shrink-0 flex items-center gap-1 bg-white z-20 border-r border-neutral-100 sticky left-0">
+        <div class="flex-shrink-0 flex items-center gap-1 bg-white z-20 border-r border-neutral-100 sticky left-0 pointer-events-auto">
           <!-- Botão expand/collapse subtarefas -->
           <button
             v-if="canEdit"
@@ -37,14 +37,14 @@
         <!-- Área rolável horizontalmente -->
         <div 
           ref="rowScrollRef"
-          class="flex-1 overflow-x-auto overflow-y-visible scrollbar-mobile snap-x snap-mandatory touch-pan-x"
+          class="flex-1 overflow-x-auto overflow-y-visible scrollbar-mobile snap-x snap-mandatory touch-pan-x pointer-events-auto"
           @scroll="onRowScroll"
         >
-          <div class="flex items-center gap-1 pr-4 py-3 min-h-[44px]">
+          <div class="flex items-center gap-1 pr-4 py-3 min-h-[44px] pointer-events-auto">
             <!-- Todas as colunas na ordem configurada (exceto título) -->
             <template v-for="col in orderedColumns" :key="col.key">
               <template v-if="isVisible(col.key)">
-                <div class="flex-shrink-0 snap-start" style="width: 110px; min-width: 110px;">
+                <div class="flex-shrink-0 snap-start pointer-events-auto" style="width: 110px; min-width: 110px;">
                   <TimelineCell
                     v-if="col.key === 'timeline'"
                     :task-id="task.id"
@@ -116,7 +116,7 @@
         <button
           v-if="canEdit"
           type="button"
-          class="flex-shrink-0 p-0.5 text-neutral-400 hover:text-neutral-700 transition-transform"
+          class="flex-shrink-0 p-0.5 text-neutral-400 hover:text-neutral-700 transition-transform pointer-events-auto"
           :class="{ 'rotate-90': isExpanded, 'opacity-50': !hasSubtasks }"
           :title="hasSubtasks ? 'Expandir subtarefas' : 'Adicionar subtarefa'"
           @click="toggleExpand"
@@ -142,7 +142,7 @@
         </div>
         
         <!-- Título editável inline -->
-        <div class="flex-shrink-0" :style="getColumnStyle('title')">
+        <div class="flex-shrink-0 pointer-events-auto" :style="getColumnStyle('title')">
           <TitleCell
             :task-id="task.id"
             :board-id="task.board_id"
@@ -155,7 +155,7 @@
         <!-- Todas as colunas na ordem configurada -->
         <template v-for="col in orderedColumns" :key="col.key">
           <template v-if="isVisible(col.key)">
-            <div class="flex-shrink-0" :style="getColumnStyle(col.key)">
+            <div class="flex-shrink-0 pointer-events-auto" :style="getColumnStyle(col.key)">
               <TimelineCell
                 v-if="col.key === 'timeline'"
                 :task-id="task.id"
