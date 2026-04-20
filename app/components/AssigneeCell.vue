@@ -65,7 +65,7 @@
       <div
         v-if="open && canEditAssignees"
         ref="dropdownRef"
-        class="fixed z-[9999] w-[380px] bg-white border border-neutral-200 rounded-xl shadow-2xl overflow-hidden"
+        class="fixed z-[99999] w-[380px] bg-white border border-neutral-200 rounded-xl shadow-2xl overflow-hidden"
         :style="dropdownStyle"
       >
         <!-- Chips de responsáveis selecionados -->

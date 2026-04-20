@@ -3,14 +3,14 @@
     <!-- Overlay -->
     <div
       v-if="open"
-      class="fixed inset-0 bg-black/30 z-[9998] backdrop-blur-sm"
+      class="fixed inset-0 bg-black/30 z-[99998] backdrop-blur-sm"
       @click="$emit('close')"
     />
     
     <!-- Modal -->
     <div
       v-if="open"
-      class="fixed z-[9999] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col"
+      class="fixed z-[99999] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col"
       :class="isMobile ? 'inset-4 max-h-[calc(100vh-32px)]' : 'w-[600px] max-h-[80vh]'"
       :style="modalStyle"
     >

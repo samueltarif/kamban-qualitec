@@ -22,7 +22,7 @@
       <Transition name="dropdown">
         <div
           v-if="open"
-          class="fixed z-[9999] w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-neutral-100 overflow-hidden"
+          class="fixed z-[99999] w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-neutral-100 overflow-hidden"
           :style="panelStyle"
         >
           <!-- Header -->

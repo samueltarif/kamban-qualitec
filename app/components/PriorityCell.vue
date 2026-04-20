@@ -25,7 +25,7 @@
       <!-- Overlay para mobile -->
       <div
         v-if="open && canEditTasks && isMobile"
-        class="fixed inset-0 bg-black/30 z-[9998]"
+        class="fixed inset-0 bg-black/30 z-[99998]"
         @click="open = false"
       />
       
@@ -33,7 +33,7 @@
       <div
         v-if="open && canEditTasks"
         ref="dropdownRef"
-        class="fixed z-[9999] bg-white border border-neutral-200 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
+        class="fixed z-[99999] bg-white border border-neutral-200 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
         :class="isMobile ? 'w-[calc(100vw-32px)] max-h-[90vh]' : 'w-[600px]'"
         :style="dropdownStyle"
       >

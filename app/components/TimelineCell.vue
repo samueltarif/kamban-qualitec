@@ -18,7 +18,7 @@
       <div
         v-if="open"
         ref="popoverRef"
-        class="fixed z-[9999] bg-white border border-neutral-200 rounded-xl shadow-xl p-4 w-72"
+        class="fixed z-[99999] bg-white border border-neutral-200 rounded-xl shadow-xl p-4 w-72"
         :style="popoverStyle"
       >
         <p class="text-xs font-semibold text-neutral-500 mb-3 uppercase tracking-wide">Cronograma</p>
