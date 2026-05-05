@@ -74,6 +74,8 @@
         :statuses="statuses"
         :priorities="priorities"
         :is-dragging="draggingTaskId === task.id"
+        :board-id="boardId"
+        :can-edit="canEdit"
         @click="$emit('open-task', task.id)"
         @drag-start="handleDragStart(task.id)"
         @drag-end="handleDragEnd"
@@ -145,6 +147,7 @@ const props = defineProps<{
   draggingTaskId: string | null
   draggingColumnId?: string | null
   isDragOverColumn?: boolean
+  boardId?: string
 }>()
 
 const emit = defineEmits<{

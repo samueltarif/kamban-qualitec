@@ -84,8 +84,16 @@ export function useBoardPage(boardId: string) {
   // Load preferences from localStorage
   function loadPreferences() {
     if (import.meta.client) {
-      const viewModeSaved = localStorage.getItem(`board-view-mode-${boardId}`)
-      if (viewModeSaved) viewMode.value = viewModeSaved as 'horizontal' | 'vertical'
+      // Detectar se é mobile
+      const isMobile = window.innerWidth < 640
+      
+      // Se for mobile, forçar modo Kanban
+      if (isMobile) {
+        viewMode.value = 'vertical'
+      } else {
+        const viewModeSaved = localStorage.getItem(`board-view-mode-${boardId}`)
+        if (viewModeSaved) viewMode.value = viewModeSaved as 'horizontal' | 'vertical'
+      }
 
       const emptyGroupsSaved = localStorage.getItem(`board-show-empty-${boardId}`)
       if (emptyGroupsSaved !== null) showEmptyGroups.value = emptyGroupsSaved === 'true'

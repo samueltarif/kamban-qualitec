@@ -4,15 +4,21 @@ import nodemailer from 'nodemailer'
 
 export default defineEventHandler(async (event) => {
   const startTime = Date.now()
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
   console.log('\n========== [TASK-ASSIGNED EMAIL] START ==========')
+  console.log('[task-assigned] Request ID:', requestId)
   console.log('[task-assigned] Timestamp:', new Date().toISOString())
+  console.log('[task-assigned] Environment:', process.env.NODE_ENV || 'unknown')
   
   try {
+    // STEP 1: Read body
+    console.log('[task-assigned] STEP 1: Reading request body...')
     const body = await readBody(event)
     const { taskId, assigneeId } = body
 
     console.log('[task-assigned] ✓ Request received')
-    console.log('[task-assigned] Payload:', { taskId, assigneeId })
+    console.log('[task-assigned] Payload:', { taskId, assigneeId, requestId })
 
     if (!taskId || !assigneeId) {
       console.log('[task-assigned] ✗ Missing required fields')
@@ -22,19 +28,50 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // STEP 2: Load runtime config
+    console.log('[task-assigned] STEP 2: Loading runtime config...')
     const config = useRuntimeConfig()
     
     console.log('[task-assigned] ✓ Config loaded')
     console.log('[task-assigned] Config check:', {
       hasSupabaseUrl: !!config.public.supabaseUrl,
+      supabaseUrlPrefix: config.public.supabaseUrl?.substring(0, 20) + '...',
       hasSupabaseKey: !!config.supabaseServiceRoleKey,
+      supabaseKeyPrefix: config.supabaseServiceRoleKey?.substring(0, 10) + '...',
       hasEmailUser: !!config.emailUser,
+      emailUser: config.emailUser,
       hasEmailSmtp: !!config.emailSmtp,
+      emailSmtp: config.emailSmtp,
       hasEmailPort: !!config.emailPort,
-      hasEmailPass: !!config.emailPass
+      emailPort: config.emailPort,
+      hasEmailPass: !!config.emailPass,
+      emailPassLength: config.emailPass?.length || 0,
+      hasEmailFromName: !!config.emailFromName,
+      emailFromName: config.emailFromName,
+      hasAppUrl: !!config.public.appUrl,
+      appUrl: config.public.appUrl
     })
     
-    // Criar cliente Supabase com service role
+    // Validar variáveis críticas
+    const missingVars = []
+    if (!config.public.supabaseUrl) missingVars.push('SUPABASE_URL')
+    if (!config.supabaseServiceRoleKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY')
+    if (!config.emailUser) missingVars.push('EMAIL_USER')
+    if (!config.emailSmtp) missingVars.push('EMAIL_SMTP')
+    if (!config.emailPort) missingVars.push('EMAIL_PORT')
+    if (!config.emailPass) missingVars.push('EMAIL_PASS')
+    if (!config.public.appUrl) missingVars.push('PUBLIC_APP_URL')
+    
+    if (missingVars.length > 0) {
+      console.error('[task-assigned] ✗ CRITICAL: Missing environment variables:', missingVars)
+      throw createError({
+        statusCode: 500,
+        message: `Missing required environment variables: ${missingVars.join(', ')}`
+      })
+    }
+    
+    // STEP 3: Create Supabase client
+    console.log('[task-assigned] STEP 3: Creating Supabase client...')
     const supabase = createClient<Database>(
       config.public.supabaseUrl,
       config.supabaseServiceRoleKey
@@ -177,18 +214,40 @@ export default defineEventHandler(async (event) => {
     })
 
     // Configurar transporter de email
-    console.log('[task-assigned] → Configuring email transporter...')
-    const transporter = nodemailer.createTransport({
+    console.log('[task-assigned] STEP 6: Configuring email transporter...')
+    console.log('[task-assigned] Transporter config:', {
       host: config.emailSmtp,
       port: parseInt(config.emailPort),
       secure: true,
-      auth: {
-        user: config.emailUser,
-        pass: config.emailPass
-      }
+      user: config.emailUser
     })
-
-    console.log('[task-assigned] ✓ Transporter configured')
+    
+    let transporter
+    try {
+      transporter = nodemailer.createTransport({
+        host: config.emailSmtp,
+        port: parseInt(config.emailPort),
+        secure: true,
+        auth: {
+          user: config.emailUser,
+          pass: config.emailPass
+        }
+      })
+      console.log('[task-assigned] ✓ Transporter configured')
+      
+      // Verificar conexão
+      console.log('[task-assigned] → Verifying transporter connection...')
+      await transporter.verify()
+      console.log('[task-assigned] ✓ Transporter connection verified')
+    } catch (transportError: any) {
+      console.error('[task-assigned] ✗ Error configuring/verifying transporter:', transportError.message)
+      console.error('[task-assigned] Transport error code:', transportError.code)
+      console.error('[task-assigned] Transport error stack:', transportError.stack)
+      throw createError({
+        statusCode: 500,
+        message: `Failed to configure email transporter: ${transportError.message}. Check EMAIL_SMTP, EMAIL_PORT, EMAIL_USER, and EMAIL_PASS.`
+      })
+    }
 
     // Formatar data
     const formatDate = (date: string | null) => {
@@ -218,63 +277,102 @@ export default defineEventHandler(async (event) => {
       return `${kb.toFixed(1)} KB`
     }
 
-    // Montar HTML do email usando o template premium
+    // STEP 7: Generate email HTML
+    console.log('[task-assigned] STEP 7: Generating email HTML...')
     const taskUrl = `${config.public.appUrl}/boards/${task.board.id}?task=${task.id}`
     
-    // Função generateTaskAssignmentEmail é auto-importada de server/utils/emailTemplates.ts
-    const emailHtml = generateTaskAssignmentEmail({
-      assigneeName: assignee.full_name || assignee.email,
-      taskTitle: task.title,
-      taskDescription: task.description || undefined,
-      taskNotes: task.notes || undefined,
-      boardName: task.board.name,
-      groupName: task.group?.name,
-      groupColor: task.group?.color,
-      statusName: task.status?.name,
-      statusColor: task.status?.color,
-      priorityName: task.priority?.name,
-      priorityColor: task.priority?.color,
-      startDate: task.start_date ? formatDate(task.start_date) : undefined,
-      dueDate: task.due_date ? formatDate(task.due_date) : undefined,
-      budget: task.budget ? formatBudget(task.budget) : undefined,
-      subtasks: task.subtasks?.map(st => ({
-        title: st.title,
-        isDone: st.is_done,
-        statusName: st.status?.name,
-        statusColor: st.status?.color
-      })),
-      attachments: task.attachments?.map(att => ({
-        fileName: att.file_name,
-        fileSize: att.size_bytes ? formatFileSize(att.size_bytes) : undefined,
-        category: att.category || undefined
-      })),
-      taskUrl,
-      assignedBy: task.created_by_user?.full_name || 'Sistema',
-      createdAt: formatDate(task.created_at),
-      settingsUrl: `${config.public.appUrl}/settings`
-    })
+    console.log('[task-assigned] Task URL:', taskUrl)
+    console.log('[task-assigned] Checking if generateTaskAssignmentEmail is available...')
+    
+    // Verificar se a função está disponível
+    if (typeof generateTaskAssignmentEmail !== 'function') {
+      console.error('[task-assigned] ✗ CRITICAL: generateTaskAssignmentEmail is not a function!')
+      console.error('[task-assigned] Type:', typeof generateTaskAssignmentEmail)
+      throw createError({
+        statusCode: 500,
+        message: 'Email template function not available. This may be a build/import issue in production.'
+      })
+    }
+    
+    console.log('[task-assigned] ✓ generateTaskAssignmentEmail is available')
+    
+    let emailHtml: string
+    try {
+      emailHtml = generateTaskAssignmentEmail({
+        assigneeName: assignee.full_name || assignee.email,
+        taskTitle: task.title,
+        taskDescription: task.description || undefined,
+        taskNotes: task.notes || undefined,
+        boardName: task.board.name,
+        groupName: task.group?.name,
+        groupColor: task.group?.color,
+        statusName: task.status?.name,
+        statusColor: task.status?.color,
+        priorityName: task.priority?.name,
+        priorityColor: task.priority?.color,
+        startDate: task.start_date ? formatDate(task.start_date) : undefined,
+        dueDate: task.due_date ? formatDate(task.due_date) : undefined,
+        budget: task.budget ? formatBudget(task.budget) : undefined,
+        subtasks: task.subtasks?.map(st => ({
+          title: st.title,
+          isDone: st.is_done,
+          statusName: st.status?.name,
+          statusColor: st.status?.color
+        })),
+        attachments: task.attachments?.map(att => ({
+          fileName: att.file_name,
+          fileSize: att.size_bytes ? formatFileSize(att.size_bytes) : undefined,
+          category: att.category || undefined
+        })),
+        taskUrl,
+        assignedBy: task.created_by_user?.full_name || 'Sistema',
+        createdAt: formatDate(task.created_at),
+        settingsUrl: `${config.public.appUrl}/settings`
+      })
+      console.log('[task-assigned] ✓ Email HTML generated, length:', emailHtml.length)
+    } catch (templateError: any) {
+      console.error('[task-assigned] ✗ Error generating email HTML:', templateError.message)
+      console.error('[task-assigned] Template error stack:', templateError.stack)
+      throw createError({
+        statusCode: 500,
+        message: `Failed to generate email template: ${templateError.message}`
+      })
+    }
 
-    // Enviar email
-    console.log('[task-assigned] → Sending email...')
+    // STEP 8: Send email
+    console.log('[task-assigned] STEP 8: Sending email...')
     console.log('[task-assigned] Email details:', {
       from: `"${config.emailFromName || 'Sistema Kanban'}" <${config.emailUser}>`,
       to: assignee.email,
-      subject: `Nova Tarefa: ${task.title}`
+      subject: `Nova Tarefa: ${task.title}`,
+      htmlLength: emailHtml.length
     })
     
-    const emailResult = await transporter.sendMail({
-      from: `"${config.emailFromName || 'Sistema Kanban'}" <${config.emailUser}>`,
-      to: assignee.email,
-      subject: `Nova Tarefa: ${task.title}`,
-      html: emailHtml
-    })
-
-    console.log('[task-assigned] ✓ Email sent successfully!')
-    console.log('[task-assigned] Email result:', {
-      messageId: emailResult.messageId,
-      accepted: emailResult.accepted,
-      rejected: emailResult.rejected
-    })
+    let emailResult
+    try {
+      emailResult = await transporter.sendMail({
+        from: `"${config.emailFromName || 'Sistema Kanban'}" <${config.emailUser}>`,
+        to: assignee.email,
+        subject: `Nova Tarefa: ${task.title}`,
+        html: emailHtml
+      })
+      console.log('[task-assigned] ✓ Email sent successfully!')
+      console.log('[task-assigned] Email result:', {
+        messageId: emailResult.messageId,
+        accepted: emailResult.accepted,
+        rejected: emailResult.rejected,
+        response: emailResult.response
+      })
+    } catch (sendError: any) {
+      console.error('[task-assigned] ✗ Error sending email:', sendError.message)
+      console.error('[task-assigned] Send error code:', sendError.code)
+      console.error('[task-assigned] Send error response:', sendError.response)
+      console.error('[task-assigned] Send error stack:', sendError.stack)
+      throw createError({
+        statusCode: 500,
+        message: `Failed to send email: ${sendError.message}. Code: ${sendError.code || 'unknown'}`
+      })
+    }
 
     // Registrar envio
     console.log('[task-assigned] → Registering email log...')
@@ -301,15 +399,42 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     const duration = Date.now() - startTime
     console.error('\n========== [TASK-ASSIGNED EMAIL] ERROR ==========')
-    console.error('[task-assigned] ✗ Error type:', error.constructor.name)
-    console.error('[task-assigned] ✗ Error message:', error.message)
-    console.error('[task-assigned] ✗ Error stack:', error.stack)
+    console.error('[task-assigned] Request ID:', requestId)
+    console.error('[task-assigned] ✗ Error type:', error.constructor?.name || 'Unknown')
+    console.error('[task-assigned] ✗ Error message:', error.message || 'No message')
+    console.error('[task-assigned] ✗ Error code:', error.code || 'No code')
+    console.error('[task-assigned] ✗ Error statusCode:', error.statusCode || 'No statusCode')
+    console.error('[task-assigned] ✗ Error stack:', error.stack || 'No stack')
     console.error('[task-assigned] ✗ Duration before error:', duration, 'ms')
+    
+    // Log adicional para erros específicos
+    if (error.message?.includes('Missing required environment variables')) {
+      console.error('[task-assigned] ✗ PRODUCTION CONFIG ERROR: Environment variables are missing!')
+      console.error('[task-assigned] ✗ This usually means the deployment platform (Vercel/Netlify/etc) is missing env vars')
+    }
+    
+    if (error.message?.includes('generateTaskAssignmentEmail')) {
+      console.error('[task-assigned] ✗ TEMPLATE ERROR: Email template function not available!')
+      console.error('[task-assigned] ✗ This may be a build issue - check if server/utils/emailTemplates.ts is included in build')
+    }
+    
+    if (error.code === 'EAUTH' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+      console.error('[task-assigned] ✗ SMTP ERROR: Connection/authentication failed!')
+      console.error('[task-assigned] ✗ Check EMAIL_SMTP, EMAIL_PORT, EMAIL_USER, EMAIL_PASS in production')
+    }
+    
     console.error('========== [TASK-ASSIGNED EMAIL] END (error) ==========\n')
     
+    // Retornar erro estruturado
     throw createError({
       statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to send email'
+      message: error.message || 'Failed to send email',
+      data: {
+        requestId,
+        errorType: error.constructor?.name || 'Unknown',
+        errorCode: error.code || 'unknown',
+        duration
+      }
     })
   }
 })

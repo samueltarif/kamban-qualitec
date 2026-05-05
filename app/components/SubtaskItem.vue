@@ -47,6 +47,20 @@
       </p>
     </div>
 
+    <!-- Botão de edição completa -->
+    <button
+      v-if="canEdit"
+      type="button"
+      class="opacity-0 group-hover:opacity-100 sm:opacity-100 p-1.5 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+      aria-label="Editar subtarefa"
+      title="Editar detalhes"
+      @click="openModal"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    </button>
+
     <!-- Botão de exclusão -->
     <button
       v-if="canEdit"
@@ -77,6 +91,17 @@
       <BaseButton variant="danger" @click="handleDelete">Excluir</BaseButton>
     </template>
   </BaseModal>
+
+  <!-- Modal de edição completa -->
+  <SubtaskModal
+    v-if="showEditModal"
+    v-model="showEditModal"
+    :subtask-id="subtask.id"
+    :task-id="taskId"
+    :board-id="boardId"
+    @updated="$emit('updated')"
+    @deleted="handleModalDelete"
+  />
 </template>
 
 <script setup lang="ts">
@@ -87,6 +112,8 @@ type Subtask = Tables<'subtasks'>
 
 const props = defineProps<{
   subtask: Subtask
+  taskId: string
+  boardId: string
   canEdit: boolean
   canDrag?: boolean
 }>()
@@ -95,12 +122,14 @@ const emit = defineEmits<{
   (e: 'toggle', id: string, isDone: boolean): void
   (e: 'update', id: string, title: string): void
   (e: 'delete', id: string): void
+  (e: 'updated'): void
 }>()
 
 const isEditing = ref(false)
 const editTitle = ref('')
 const editInput = ref<HTMLInputElement | null>(null)
 const showDeleteConfirm = ref(false)
+const showEditModal = ref(false)
 
 function startEdit() {
   if (!props.canEdit) return
@@ -127,6 +156,10 @@ function cancelEdit() {
   editTitle.value = ''
 }
 
+function openModal() {
+  showEditModal.value = true
+}
+
 function confirmDelete() {
   showDeleteConfirm.value = true
 }
@@ -134,5 +167,10 @@ function confirmDelete() {
 function handleDelete() {
   emit('delete', props.subtask.id)
   showDeleteConfirm.value = false
+}
+
+function handleModalDelete(subtaskId: string) {
+  emit('delete', subtaskId)
+  showEditModal.value = false
 }
 </script>

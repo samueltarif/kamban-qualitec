@@ -134,10 +134,12 @@
         <!-- Responsáveis -->
         <div class="space-y-1.5">
           <label class="text-xs font-medium text-neutral-500 uppercase tracking-wide">Responsáveis</label>
-          <div class="flex items-center gap-2 min-h-[44px] px-1">
-            <AvatarStack v-if="assignees.length > 0" :assignees="assignees" />
-            <span v-else class="text-sm text-neutral-400 italic">Nenhum responsável</span>
-          </div>
+          <AssigneeCell
+            :task-id="taskId"
+            :board-id="boardId"
+            :initial-assignees="assignees"
+            @update="handleAssigneesUpdate"
+          />
         </div>
       </div>
 
@@ -391,6 +393,11 @@ async function toggleArchive() {
 
 function onClose() {
   emit('update:modelValue', false)
+}
+
+function handleAssigneesUpdate(newAssignees: any[]) {
+  // Atualizar a lista local de assignees
+  assignees.value = newAssignees
 }
 
 function formatDate(d: string) {

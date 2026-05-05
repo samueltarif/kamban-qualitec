@@ -1,40 +1,73 @@
 <template>
   <div class="flex-1 overflow-y-auto p-2 sm:p-4">
-    <!-- Filtro de grupos - Lista permanente -->
+    <!-- Filtro de grupos - Lista colapsável -->
     <div class="mb-4">
       <div class="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-        <!-- Opção "Todos os grupos" -->
-        <button
-          @click="selectAllGroups"
-          class="w-full px-4 py-3 text-left text-label-sm hover:bg-neutral-50 transition-colors flex items-center gap-3 border-b border-neutral-100"
-          :class="{ 'bg-primary-50 text-primary-700 font-medium': showAllGroups }"
+        <!-- Header com botão de colapsar -->
+        <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-neutral-50 to-neutral-100 border-b border-neutral-200">
+          <button
+            @click="toggleGroupsPanel"
+            class="flex items-center gap-2.5 text-label-sm font-semibold text-neutral-700 hover:text-primary-600 transition-colors group"
+          >
+            <div class="flex flex-col gap-0.5 w-4">
+              <div class="h-0.5 bg-current rounded-full transition-all group-hover:bg-primary-600" />
+              <div class="h-0.5 bg-current rounded-full transition-all group-hover:bg-primary-600" />
+              <div class="h-0.5 bg-current rounded-full transition-all group-hover:bg-primary-600" />
+            </div>
+            <span>Filtrar por grupo</span>
+            <svg 
+              class="w-3.5 h-3.5 transition-transform text-neutral-400"
+              :class="{ 'rotate-180': !showGroupsPanel }"
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2.5" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium text-neutral-600 bg-white px-2.5 py-1 rounded-full border border-neutral-200">
+              {{ showAllGroups ? 'Todos' : visibleGroups.find(g => g.id === activeTabGroupId)?.name || 'Todos' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Lista de grupos (colapsável) -->
+        <div
+          v-show="showGroupsPanel"
+          class="transition-all duration-200"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-          </svg>
-          <span>Todos os grupos</span>
-          <span class="ml-auto text-xs text-neutral-500">
-            ({{ Object.values(tasksByGroup).flat().length }})
-          </span>
-        </button>
-        
-        <!-- Lista de grupos -->
-        <button
-          v-for="group in visibleGroups"
-          :key="`filter-${group.id}`"
-          @click="selectGroup(group.id)"
-          class="w-full px-4 py-3 text-left text-label-sm hover:bg-neutral-50 transition-colors flex items-center gap-3 border-b border-neutral-100 last:border-b-0"
-          :class="{ 'bg-primary-50 text-primary-700 font-medium': !showAllGroups && activeTabGroupId === group.id }"
-        >
-          <div 
-            class="w-3 h-3 rounded-full flex-shrink-0"
-            :style="`background-color: ${group.color || '#6366f1'}`"
-          />
-          <span class="flex-1">{{ group.name }}</span>
-          <span class="text-xs text-neutral-500">
-            ({{ tasksByGroup[group.id]?.length || 0 }})
-          </span>
-        </button>
+          <!-- Opção "Todos os grupos" -->
+          <button
+            @click="selectAllGroups"
+            class="w-full px-4 py-3 text-left text-label-sm hover:bg-neutral-50 transition-colors flex items-center gap-3 border-b border-neutral-100"
+            :class="{ 'bg-primary-50 text-primary-700 font-medium': showAllGroups }"
+          >
+            <span>Todos os grupos</span>
+            <span class="ml-auto text-xs text-neutral-500">
+              ({{ Object.values(tasksByGroup).flat().length }})
+            </span>
+          </button>
+          
+          <!-- Lista de grupos -->
+          <button
+            v-for="group in visibleGroups"
+            :key="`filter-${group.id}`"
+            @click="selectGroup(group.id)"
+            class="w-full px-4 py-3 text-left text-label-sm hover:bg-neutral-50 transition-colors flex items-center gap-3 border-b border-neutral-100 last:border-b-0"
+            :class="{ 'bg-primary-50 text-primary-700 font-medium': !showAllGroups && activeTabGroupId === group.id }"
+          >
+            <div 
+              class="w-3 h-3 rounded-full flex-shrink-0"
+              :style="`background-color: ${group.color || '#6366f1'}`"
+            />
+            <span class="flex-1">{{ group.name }}</span>
+            <span class="text-xs text-neutral-500">
+              ({{ tasksByGroup[group.id]?.length || 0 }})
+            </span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -57,6 +90,7 @@
         :statuses="statuses"
         :priorities="priorities"
         :can-edit="canEdit"
+        :board-id="boardId"
         :is-creating="creatingInGroup === group.id"
         :new-task-title="newTaskTitle"
         :dragging-task-id="draggingTaskId"
@@ -124,6 +158,7 @@ const props = defineProps<{
   statuses: Array<{ id: string; name: string; color: string }>
   priorities: Array<{ id: string; name: string; color: string }>
   canEdit: boolean
+  boardId?: string
 }>()
 
 const emit = defineEmits<{
@@ -154,6 +189,7 @@ const dropZoneRefs = ref<Map<string, any>>(new Map())
 const activeTabGroupId = ref<string | null>(null)
 const isMobile = ref(false)
 const showAllGroups = ref(true) // Por padrão mostra todos os grupos
+const showGroupsPanel = ref(true) // Controla se o painel de grupos está expandido
 
 // Swipe gesture state
 const touchStartX = ref(0)
@@ -185,6 +221,10 @@ function selectAllGroups() {
 function selectGroup(groupId: string) {
   showAllGroups.value = false
   activeTabGroupId.value = groupId
+}
+
+function toggleGroupsPanel() {
+  showGroupsPanel.value = !showGroupsPanel.value
 }
 
 function handleSwipeStart(e: TouchEvent) {

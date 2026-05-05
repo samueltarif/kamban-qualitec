@@ -67,6 +67,7 @@
       :statuses="statuses"
       :priorities="priorities"
       :can-edit="canEdit"
+      :board-id="boardId"
       @open-task="(taskId: string) => { selectedTaskId = taskId; showTaskModal = true }"
       @add-group="openAddGroup()"
       @create-task="(data: { groupId: string; title: string }) => saveNewTask(data.groupId, data.title)"

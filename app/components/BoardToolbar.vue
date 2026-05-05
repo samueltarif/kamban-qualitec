@@ -1,8 +1,8 @@
 <template>
   <ClientOnly>
     <div class="flex items-center gap-2">
-      <!-- Toggle view mode -->
-      <div class="flex items-center bg-neutral-100 rounded-lg p-0.5">
+      <!-- Toggle view mode (hidden on mobile) -->
+      <div class="hidden sm:flex items-center bg-neutral-100 rounded-lg p-0.5">
         <button
           @click="$emit('update:viewMode', 'horizontal')"
           :class="[

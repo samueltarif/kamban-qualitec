@@ -45,11 +45,14 @@
         v-for="subtask in sortedSubtasks"
         :key="subtask.id"
         :subtask="subtask"
+        :task-id="taskId"
+        :board-id="boardId"
         :can-edit="canEdit"
         :can-drag="canEdit"
         @toggle="handleToggle"
         @update="handleUpdate"
         @delete="handleDelete"
+        @updated="fetchSubtasks"
       />
     </div>
 
